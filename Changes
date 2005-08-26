@@ -1,0 +1,32 @@
+Revision history for Perl extension Catalyst::Plugin::Static::Simple
+
+0.05    2005-08-26 12:00:00
+        - Added use_apache option to enable the Apache DECLINED
+          support.  Default is disabled as it appears Catalyst is
+          faster at serving the files!
+        - Added a check that Apache's DocumentRoot matches Catalyst's
+          root before serving DECLINED.
+        - Preload MIME::Types index during setup() so it's not built on
+          the first request.
+        - Added a note on performance of Apache vs. Catalyst.
+
+0.04    2005-08-22 12:00:00
+        - Fixed bug where static files were searched for on every request
+          even without a file extension.
+        - Fixed bug where files without extensions in defined static dirs
+          were not served with text/plain.
+        - Consolidated the debug log messages.
+
+0.03    2005-08-21 23:50:00
+        - Added config option for include_path to allow for multiple 
+          directories with static files.  This option should be
+          considered experimental!
+        - Documentation cleanups.
+
+0.02    2005-08-16 18:00:00
+        - Return DECLINED when running under mod_perl to allow Apache to
+          serve the static file.  This is not done when any custom MIME
+          types have been specified, however.
+
+0.01    2005-08-11 22:00:00
+        - Initial release.
