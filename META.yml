@@ -1,8 +1,8 @@
 ---
 name: Catalyst-Plugin-Static-Simple
-version: 0.05
+version: 0.06
 author:
-  - 'Andy Grundman, C<andy@hybridized.org>'
+  - 'Andy Grundman, <andy@hybridized.org>'
 abstract: Make serving static pages painless.
 license: perl
 requires:
@@ -12,5 +12,5 @@ requires:
 provides:
   Catalyst::Plugin::Static::Simple:
     file: lib/Catalyst/Plugin/Static/Simple.pm
-    version: 0.05
+    version: 0.06
 generated_by: Module::Build version 0.2611

@@ -1,5 +1,11 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.06    2005-09-05 15:40:00
+        - Moved initial file check into prepare_action so processing can
+          bypass other plugins.
+        - Added error-checking to static dir regexes.
+        - Cleaned up various code as per Best Practices.
+
 0.05    2005-08-26 12:00:00
         - Added use_apache option to enable the Apache DECLINED
           support.  Default is disabled as it appears Catalyst is
