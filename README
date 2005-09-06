@@ -27,102 +27,113 @@ ADVANCED CONFIGURATION
     MyApp->config->{static}. If you use any of these options, the module
     will probably feel less "simple" to you!
 
-    Forcing directories into static mode
-        Define a list of top-level directories beneath your 'root' directory
-        that should always be served in static mode. Regular expressions may
-        be specified using qr//.
+  Forcing directories into static mode
+    Define a list of top-level directories beneath your 'root' directory
+    that should always be served in static mode. Regular expressions may be
+    specified using qr//.
 
-            MyApp->config->{static}->{dirs} = [
-                'static',
-                qr/^(images|css)/,
-            ];
+        MyApp->config->{static}->{dirs} = [
+            'static',
+            qr/^(images|css)/,
+        ];
 
-    Including additional directories (experimental!)
-        You may specify a list of directories in which to search for your
-        static files. The directories will be searched in order and will
-        return the first file found. Note that your root directory is not
-        automatically added to the search path when you specify an
-        include_path. You should use MyApp->config->{root} to add it.
+  Including additional directories (experimental!)
+    You may specify a list of directories in which to search for your static
+    files. The directories will be searched in order and will return the
+    first file found. Note that your root directory is not automatically
+    added to the search path when you specify an include_path. You should
+    use MyApp->config->{root} to add it.
 
-            MyApp->config->{static}->{include_path} = [
-                '/path/to/overlay',
-                \&incpath_generator,
-                MyApp->config->{root}
-            ];
+        MyApp->config->{static}->{include_path} = [
+            '/path/to/overlay',
+            \&incpath_generator,
+            MyApp->config->{root}
+        ];
     
-        With the above setting, a request for the file /images/logo.jpg will
-        search for the following files, returning the first one found:
+    With the above setting, a request for the file /images/logo.jpg will
+    search for the following files, returning the first one found:
 
-            /path/to/overlay/images/logo.jpg
-            /dynamic/path/images/logo.jpg
-            /your/app/home/root/images/logo.jpg
+        /path/to/overlay/images/logo.jpg
+        /dynamic/path/images/logo.jpg
+        /your/app/home/root/images/logo.jpg
     
-        The include path can contain a subroutine reference to dynamically
-        return a list of available directories. This method will receive the
-        $c object as a parameter and should return a reference to a list of
-        directories. Errors can be reported using die(). This method will be
-        called every time a file is requested that appears to be a static
-        file (i.e. it has an extension).
+    The include path can contain a subroutine reference to dynamically
+    return a list of available directories. This method will receive the $c
+    object as a parameter and should return a reference to a list of
+    directories. Errors can be reported using die(). This method will be
+    called every time a file is requested that appears to be a static file
+    (i.e. it has an extension).
 
-        For example:
+    For example:
 
-            sub incpath_generator {
-                my $c = shift;
+        sub incpath_generator {
+            my $c = shift;
         
-                if ( $c->session->{customer_dir} ) {
-                    return [ $c->session->{customer_dir} ];
-                } else {
-                    die "No customer dir defined.";
-                }
+            if ( $c->session->{customer_dir} ) {
+                return [ $c->session->{customer_dir} ];
+            } else {
+                die "No customer dir defined.";
             }
+        }
 
-    Custom MIME types
-        To override or add to the default MIME types set by the MIME::Types
-        module, you may enter your own extension to MIME type mapping.
+  Custom MIME types
+    To override or add to the default MIME types set by the MIME::Types
+    module, you may enter your own extension to MIME type mapping.
 
-            MyApp->config->{static}->{mime_types} = {
-                jpg => 'image/jpg',
-                png => 'image/png',
-            };
+        MyApp->config->{static}->{mime_types} = {
+            jpg => 'image/jpg',
+            png => 'image/png',
+        };
+
+  Apache integration and performance
+    Optionally, when running under mod_perl, Static::Simple can return
+    DECLINED on static files to allow Apache to serve the file. A check is
+    first done to make sure that Apache's DocumentRoot matches your Catalyst
+    root, and that you are not using any custom MIME types or multiple
+    roots. To enable the Apache support, you can set the following option.
+
+        MyApp->config->{static}->{use_apache} = 1;
     
-    Apache integration and performance
-        Optionally, when running under mod_perl, Static::Simple can return
-        DECLINED on static files to allow Apache to serve the file. A check
-        is first done to make sure that Apache's DocumentRoot matches your
-        Catalyst root, and that you are not using any custom MIME types or
-        multiple roots. To enable the Apache support, you can set the
-        following option.
+    By default this option is disabled because after several benchmarks it
+    appears that just serving the file from Catalyst is the better option.
+    On a 3K file, Catalyst appears to be around 25% faster, and is 42%
+    faster on a 10K file. My benchmarking was done using the following
+    'siege' command, so other benchmarks would be welcome!
 
-            MyApp->config->{static}->{use_apache} = 1;
-    
-        By default this option is disabled because after several benchmarks
-        it appears that just serving the file from Catalyst is the better
-        option. On a 3K file, Catalyst appears to be around 25% faster, and
-        is 42% faster on a 10K file. My benchmarking was done using the
-        following 'siege' command, so other benchmarks would be welcome!
+        siege -u http://server/static/css/10K.css -b -t 1M -c 1
 
-            siege -u http://server/static/css/10K.css b -t 1M -c 1
+    For best static performance, you should still serve your static files
+    directly from Apache by defining a Location block similar to the
+    following:
 
-        For best static performance, you should still serve your static
-        files directly from Apache by defining a Location block similar to
-        the following:
+        <Location /static>
+            SetHandler default-handler
+        </Location>
 
-            <Location /static>
-                SetHandler default-handler
-            </Location>
+  Bypassing other plugins
+    This plugin checks for a static file in the prepare_action stage. If the
+    request is for a static file, it will bypass all remaining
+    prepare_action steps. This means that by placing Static::Simple before
+    all other plugins, they will not execute when a static file is found.
+    This can be helpful by skipping session cookie checks for example. Or,
+    if you want some plugins to run even on static files, list them before
+    Static::Simple.
 
-    Debugging information
-        Enable additional debugging information printed in the Catalyst log.
-        This is automatically enabled when running Catalyst in -Debug mode.
+    Currently, work done by plugins in any other prepare method will execute
+    normally.
 
-            MyApp->config->{static}->{debug} = 1;
+  Debugging information
+    Enable additional debugging information printed in the Catalyst log.
+    This is automatically enabled when running Catalyst in -Debug mode.
+
+        MyApp->config->{static}->{debug} = 1;
 
 SEE ALSO
     Catalyst, Catalyst::Plugin::Static,
     <http://www.iana.org/assignments/media-types/>
 
 AUTHOR
-    Andy Grundman, "andy@hybridized.org"
+    Andy Grundman, <andy@hybridized.org>
 
 THANKS
     The authors of Catalyst::Plugin::Static:

@@ -7,12 +7,12 @@ use File::stat;
 use MIME::Types;
 use NEXT;
 
-our $VERSION = '0.06';
+our $VERSION = '0.08';
 
-__PACKAGE__->mk_classdata( qw/_mime_types/ );
+__PACKAGE__->mk_classdata( qw/_static_mime_types/ );
 __PACKAGE__->mk_accessors( qw/_static_file
-                              _apache_mode
-                              _debug_message/ );
+                              _static_apache_mode
+                              _static_debug_message/ );
 
 # prepare_action is used to first check if the request path is a static file.
 # If so, we skip all other prepare_action steps to improve performance.
@@ -53,7 +53,7 @@ sub prepare_action {
 sub dispatch {
     my $c = shift;
     
-    return undef if ( $c->res->status == 404 );
+    return if ( $c->res->status != 200 );
     
     if ( $c->_static_file ) {
         return $c->_serve_static;
@@ -75,8 +75,8 @@ sub finalize {
     }
     
     # return DECLINED when under mod_perl
-    if ( $c->config->{static}->{use_apache} && $c->_apache_mode ) {
-        my $engine = $c->_apache_mode;
+    if ( $c->config->{static}->{use_apache} && $c->_static_apache_mode ) {
+        my $engine = $c->_static_apache_mode;
         no strict 'subs';
         if ( $engine == 13 ) {
             return Apache::Constants::DECLINED;
@@ -110,9 +110,10 @@ sub setup {
     
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
-    $c->_mime_types( MIME::Types->new( only_complete => 1 ) );
+    $c->_static_mime_types( MIME::Types->new( only_complete => 1 ) );
+    
     # preload the type index hash so it's not built on the first request
-    $c->_mime_types->create_type_index;
+    $c->_static_mime_types->create_type_index;
 }
 
 # Search through all included directories for the static file
@@ -147,7 +148,7 @@ sub _locate_static_file {
         }
     }
     
-    return undef;
+    return;
 }
 
 sub _serve_static {
@@ -184,8 +185,8 @@ sub _serve_static {
              else {
                  $c->_debug_msg( "DECLINED to Apache" )
                     if ( $c->config->{static}->{debug} );          
-                 $c->_apache_mode( $engine );
-                 return undef;
+                 $c->_static_apache_mode( $engine );
+                 return;
              }
         }
     }
@@ -215,15 +216,14 @@ sub _serve_static {
 # looks up the correct MIME type for the current file extension
 sub _ext_to_type {
     my $c = shift;
-    
     my $path = $c->req->path;
-    my $type;
     
     if ( $path =~ /.*\.(\S{1,})$/xms ) {
         my $ext = $1;
         my $user_types = $c->config->{static}->{mime_types};
-        if (   $type = $user_types->{$ext} 
-            || $c->_mime_types->mimeTypeOf( $ext ) ) {
+        my $type = $user_types->{$ext} 
+                || $c->_static_mime_types->mimeTypeOf( $ext );
+        if ( $type ) {
             $c->_debug_msg( "as $type" )
                 if ( $c->config->{static}->{debug} );            
             return $type;
@@ -244,15 +244,15 @@ sub _ext_to_type {
 sub _debug_msg {
     my ( $c, $msg ) = @_;
     
-    if ( !defined $c->_debug_message ) {
-        $c->_debug_message( [] );
+    if ( !defined $c->_static_debug_message ) {
+        $c->_static_debug_message( [] );
     }
     
     if ( $msg ) {
-        push @{ $c->_debug_message }, $msg;
+        push @{ $c->_static_debug_message }, $msg;
     }
     
-    return $c->_debug_message;
+    return $c->_static_debug_message;
 }
 
 1;
@@ -291,9 +291,7 @@ Configuration is completely optional and is specified within
 MyApp->config->{static}.  If you use any of these options, the module will
 probably feel less "simple" to you!
 
-=over 4
-
-=item Forcing directories into static mode
+=head2 Forcing directories into static mode
 
 Define a list of top-level directories beneath your 'root' directory that
 should always be served in static mode.  Regular expressions may be
@@ -304,7 +302,7 @@ specified using qr//.
         qr/^(images|css)/,
     ];
 
-=item Including additional directories (experimental!)
+=head2 Including additional directories (experimental!)
 
 You may specify a list of directories in which to search for your static
 files.  The directories will be searched in order and will return the first
@@ -343,7 +341,7 @@ For example:
         }
     }
 
-=item Custom MIME types
+=head2 Custom MIME types
 
 To override or add to the default MIME types set by the MIME::Types module,
 you may enter your own extension to MIME type mapping. 
@@ -352,8 +350,8 @@ you may enter your own extension to MIME type mapping.
         jpg => 'image/jpg',
         png => 'image/png',
     };
-    
-=item Apache integration and performance
+
+=head2 Apache integration and performance
 
 Optionally, when running under mod_perl, Static::Simple can return DECLINED
 on static files to allow Apache to serve the file.  A check is first done to
@@ -377,8 +375,8 @@ from Apache by defining a Location block similar to the following:
     <Location /static>
         SetHandler default-handler
     </Location>
-    
-=item Bypassing other plugins
+
+=head2 Bypassing other plugins
 
 This plugin checks for a static file in the prepare_action stage.  If the
 request is for a static file, it will bypass all remaining prepare_action
@@ -390,15 +388,13 @@ to run even on static files, list them before Static::Simple.
 Currently, work done by plugins in any other prepare method will execute
 normally.
 
-=item Debugging information
+=head2 Debugging information
 
 Enable additional debugging information printed in the Catalyst log.  This
 is automatically enabled when running Catalyst in -Debug mode.
 
     MyApp->config->{static}->{debug} = 1;
 
-=back
-    
 =head1 SEE ALSO
 
 L<Catalyst>, L<Catalyst::Plugin::Static>, 
