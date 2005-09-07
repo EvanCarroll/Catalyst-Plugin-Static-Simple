@@ -1,6 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.08    
+0.08    2005-09-07 18:50:00
+        - Added tests for everything except Apache support.
 
 0.07    2005-09-05 21:05:00
         - POD fixes. (Thomas L. Shinnick)
