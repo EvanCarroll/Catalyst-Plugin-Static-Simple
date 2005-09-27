@@ -7,7 +7,7 @@ use File::stat;
 use MIME::Types;
 use NEXT;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 __PACKAGE__->mk_classdata( qw/_static_mime_types/ );
 __PACKAGE__->mk_accessors( qw/_static_file
@@ -312,7 +312,7 @@ specified using qr//.
         qr/^(images|css)/,
     ];
 
-=head2 Including additional directories (experimental!)
+=head2 Including additional directories
 
 You may specify a list of directories in which to search for your static
 files.  The directories will be searched in order and will return the first
@@ -413,6 +413,10 @@ L<http://www.iana.org/assignments/media-types/>
 =head1 AUTHOR
 
 Andy Grundman, <andy@hybridized.org>
+
+=head1 CONTRIBUTORS
+
+Marcus Ramberg, <mramberg@cpan.org>
 
 =head1 THANKS
 
