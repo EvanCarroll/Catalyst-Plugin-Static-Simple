@@ -56,9 +56,9 @@ sub dispatch {
     return if ( $c->res->status != 200 );
     
     if ( $c->_static_file ) {
-	if ( $c->config->{static}->{no_logs} ) {
-	   if ( $c->log->can('abort') ) { $c->log->abort(1) ; }
-	}
+        if ( $c->config->{static}->{no_logs} && $c->log->can('abort') ) {
+           $c->log->abort( 1 );
+        }
         return $c->_serve_static;
     }
     else {
@@ -109,7 +109,9 @@ sub setup {
     $c->config->{static}->{mime_types} ||= {};
     $c->config->{static}->{use_apache} ||= 0; 
     $c->config->{static}->{debug} ||= $c->debug;
-    $c->config->{static}->{no_logs} ||= 1;
+    if ( ! defined $c->config->{static}->{no_logs} ) {
+        $c->config->{static}->{no_logs} = 1;
+    }
     
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
@@ -296,10 +298,10 @@ probably feel less "simple" to you!
 
 =head2 Aborting request logging
 
-With Catalyst 5.50, there has been added support for dropping logging for a 
-request. We've turned this on by default, as static logging tends to clutter
-the Log API, however, if you want logging of static requests, you can easily
-turn it on by setting MyApp->config->{static}->{no_logs} to 0.
+Since Catalyst 5.50, there has been added support for dropping logging for a 
+request. This is enabled by default for static files, as static requests tend
+to clutter the log output.  However, if you want logging of static requests, 
+you can enable it by setting MyApp->config->{static}->{no_logs} to 0.
 
 =head2 Forcing directories into static mode
 
