@@ -1,5 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+	- Added support for squishing logs, depends on Cat 5.50.
+
 0.08    2005-09-07 18:50:00
         - Added tests for everything except Apache support.
 

@@ -56,6 +56,9 @@ sub dispatch {
     return if ( $c->res->status != 200 );
     
     if ( $c->_static_file ) {
+	if ( $c->config->{static}->{no_logs} ) {
+	   if ( $c->log->can('abort') ) { $c->log->abort(1) ; }
+	}
         return $c->_serve_static;
     }
     else {
@@ -69,9 +72,8 @@ sub finalize {
     
     # display all log messages
     if ( $c->config->{static}->{debug} && scalar @{$c->_debug_msg} ) {
-        $c->log->debug( "Static::Simple: Serving " .
-            join( " ", @{$c->_debug_msg} )
-        );
+	$c->log->debug( "Static::Simple: Serving " .
+	    join( " ", @{$c->_debug_msg} ) );
     }
     
     # return DECLINED when under mod_perl
@@ -107,6 +109,7 @@ sub setup {
     $c->config->{static}->{mime_types} ||= {};
     $c->config->{static}->{use_apache} ||= 0; 
     $c->config->{static}->{debug} ||= $c->debug;
+    $c->config->{static}->{no_logs} ||= 1;
     
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
@@ -290,6 +293,13 @@ below.
 Configuration is completely optional and is specified within 
 MyApp->config->{static}.  If you use any of these options, the module will
 probably feel less "simple" to you!
+
+=head2 Aborting request logging
+
+With Catalyst 5.50, there has been added support for dropping logging for a 
+request. We've turned this on by default, as static logging tends to clutter
+the Log API, however, if you want logging of static requests, you can easily
+turn it on by setting MyApp->config->{static}->{no_logs} to 0.
 
 =head2 Forcing directories into static mode
 
