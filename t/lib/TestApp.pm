@@ -9,7 +9,13 @@ TestApp->config(
     name => 'TestApp',
 );
 
-TestApp->setup( qw/Static::Simple/ );
+my @plugins = qw/-Debug Static::Simple/;
+
+# load the SubRequest plugin if available
+eval { require Catalyst::Plugin::SubRequest; };
+push @plugins, 'SubRequest' unless ($@);
+
+TestApp->setup( @plugins );
 
 sub incpath_generator {
     my $c = shift;
@@ -21,6 +27,18 @@ sub default : Private {
     my ( $self, $c ) = @_;
     
     $c->res->output( 'default' );
+}
+
+sub subtest : Local {
+    my ( $self, $c ) = @_;
+
+    $c->res->output( $c->subreq('/subtest2') );
+}
+
+sub subtest2 : Local {
+    my ( $self, $c ) = @_;
+    
+    $c->res->output( 'subtest2 ok' );
 }
 
 1;

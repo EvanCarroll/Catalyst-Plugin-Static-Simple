@@ -46,7 +46,7 @@ sub prepare_action {
         return if ( $c->_locate_static_file );
     }
     
-    return $c->NEXT::prepare_action(@_);
+    return $c->NEXT::ACTUAL::prepare_action(@_);
 }
 
 # dispatch takes the file found during prepare_action and serves it
@@ -62,7 +62,7 @@ sub dispatch {
         return $c->_serve_static;
     }
     else {
-        return $c->NEXT::dispatch(@_);
+        return $c->NEXT::ACTUAL::dispatch(@_);
     }
 }
 
@@ -96,7 +96,7 @@ sub finalize {
         return $c->finalize_headers;
     }
     
-    return $c->NEXT::finalize(@_);
+    return $c->NEXT::ACTUAL::finalize(@_);
 }
 
 sub setup {
