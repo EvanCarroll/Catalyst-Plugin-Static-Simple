@@ -1,9 +1,14 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
 0.09
-        - Added support for squishing logs, depends on Cat 5.50. 
-          (Marcus Ramberg)
+        - Added new configuration options to improve security:
+          ignore_extensions - keep certain extensions from being static
+          - This option defaults to tt, html, and xhtml to prevent
+            template files from being accessible.
+          ignore_dirs - keep certain dirs from being static
         - include_path is no longer experimental.
+        - Added support for hiding log output, depends on Cat 5.50. 
+          (Marcus Ramberg)
 
 0.08    2005-09-07 18:50:00
         - Added tests for everything except Apache support.

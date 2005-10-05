@@ -9,7 +9,7 @@ TestApp->config(
     name => 'TestApp',
 );
 
-my @plugins = qw/-Debug Static::Simple/;
+my @plugins = qw/Static::Simple/;
 
 # load the SubRequest plugin if available
 eval { require Catalyst::Plugin::SubRequest; };

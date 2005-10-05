@@ -27,6 +27,13 @@ ADVANCED CONFIGURATION
     MyApp->config->{static}. If you use any of these options, the module
     will probably feel less "simple" to you!
 
+  Aborting request logging
+    Since Catalyst 5.50, there has been added support for dropping logging
+    for a request. This is enabled by default for static files, as static
+    requests tend to clutter the log output. However, if you want logging of
+    static requests, you can enable it by setting
+    MyApp->config->{static}->{no_logs} to 0.
+
   Forcing directories into static mode
     Define a list of top-level directories beneath your 'root' directory
     that should always be served in static mode. Regular expressions may be
@@ -37,7 +44,7 @@ ADVANCED CONFIGURATION
             qr/^(images|css)/,
         ];
 
-  Including additional directories (experimental!)
+  Including additional directories
     You may specify a list of directories in which to search for your static
     files. The directories will be searched in order and will return the
     first file found. Note that your root directory is not automatically
@@ -75,6 +82,33 @@ ADVANCED CONFIGURATION
                 die "No customer dir defined.";
             }
         }
+    
+  Ignoring certain types of files
+    There are some file types you may not wish to serve as static files.
+    Most important in this category are your raw template files. By default,
+    files with the extensions tt, html, and xhtml will be ignored by
+    Static::Simple in the interest of security. If you wish to define your
+    own extensions to ignore, use the ignore_extensions option:
+
+        MyApp->config->{static}->{ignore_extensions} = [ qw/tt html xhtml/ ];
+    
+  Ignoring entire directories
+    To prevent an entire directory from being served statically, you can use
+    the ignore_dirs option. This option contains a list of relative
+    directory paths to ignore. If using include_path, the path will be
+    checked against every included path.
+
+        MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
+    
+    For example, if combined with the above include_path setting, this
+    ignore_dirs value will ignore the following directories if they exist:
+
+        /path/to/overlay/tmpl
+        /path/to/overlay/css
+        /dynamic/path/tmpl
+        /dynamic/path/css
+        /your/app/home/root/tmpl
+        /your/app/home/root/css    
 
   Custom MIME types
     To override or add to the default MIME types set by the MIME::Types
@@ -134,6 +168,9 @@ SEE ALSO
 
 AUTHOR
     Andy Grundman, <andy@hybridized.org>
+
+CONTRIBUTORS
+    Marcus Ramberg, <mramberg@cpan.org>
 
 THANKS
     The authors of Catalyst::Plugin::Static:

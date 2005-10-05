@@ -72,7 +72,7 @@ sub finalize {
     
     # display all log messages
     if ( $c->config->{static}->{debug} && scalar @{$c->_debug_msg} ) {
-	$c->log->debug( "Static::Simple: Serving " .
+	$c->log->debug( "Static::Simple: " .
 	    join( " ", @{$c->_debug_msg} ) );
     }
     
@@ -107,7 +107,9 @@ sub setup {
     $c->config->{static}->{dirs} ||= [];
     $c->config->{static}->{include_path} ||= [ $c->config->{root} ];
     $c->config->{static}->{mime_types} ||= {};
-    $c->config->{static}->{use_apache} ||= 0; 
+    $c->config->{static}->{ignore_extensions} ||= [ qw/tt html xhtml/ ];
+    $c->config->{static}->{ignore_dirs} ||= [];
+    $c->config->{static}->{use_apache} ||= 0;
     $c->config->{static}->{debug} ||= $c->debug;
     if ( ! defined $c->config->{static}->{no_logs} ) {
         $c->config->{static}->{no_logs} = 1;
@@ -132,8 +134,9 @@ sub _locate_static_file {
     my $dpaths;
     my $count = 64; # maximum number of directories to search
     
+    DIR_CHECK:
     while ( @ipaths && --$count) {
-        my $dir = shift @ipaths || next;
+        my $dir = shift @ipaths || next DIR_CHECK;
         
         if ( ref $dir eq 'CODE' ) {
             eval { $dpaths = &$dir( $c ) };
@@ -141,12 +144,33 @@ sub _locate_static_file {
                 $c->log->error( "Static::Simple: include_path error: " . $@ );
             } else {
                 unshift( @ipaths, @$dpaths );
-                next;
+                next DIR_CHECK;
             }
         } else {
             $dir =~ s/\/$//xms;
             if ( -d $dir && -f $dir . '/' . $path ) {
-                $c->_debug_msg( $dir . "/" . $path )
+                
+                # do we need to ignore the file?
+                for my $ignore ( @{ $c->config->{static}->{ignore_dirs} } ) {
+                    $ignore =~ s{/$}{};
+                    if ( $path =~ /^$ignore\// ) {
+                        $c->_debug_msg( "Ignoring directory `$ignore`" )
+                            if ( $c->config->{static}->{debug} );
+                        next DIR_CHECK;
+                    }
+                }
+                
+                # do we need to ignore based on extension?
+                for my $ignore_ext 
+                    ( @{ $c->config->{static}->{ignore_extensions} } ) {
+                        if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
+                            $c->_debug_msg( "Ignoring extension `$ignore_ext`" )
+                                if ( $c->config->{static}->{debug} );
+                            next DIR_CHECK;
+                        }
+                }
+                
+                $c->_debug_msg( 'Serving ' . $dir . '/' . $path )
                     if ( $c->config->{static}->{debug} );
                 return $c->_static_file( $dir . '/' . $path );
             }
@@ -181,14 +205,14 @@ sub _serve_static {
     
              # check that Apache will serve the correct file
              if ( $c->apache->document_root ne $c->config->{root} ) {
-                 $c->log->warn( "Static::Simple: Your Apache DocumentRoot"
-                              . " must be set to " . $c->config->{root} 
-                              . " to use the Apache feature.  Yours is"
-                              . " currently " . $c->apache->document_root
+                 $c->log->warn( 'Static::Simple: Your Apache DocumentRoot'
+                              . ' must be set to ' . $c->config->{root} 
+                              . ' to use the Apache feature.  Yours is'
+                              . ' currently ' . $c->apache->document_root
                               );
              }
              else {
-                 $c->_debug_msg( "DECLINED to Apache" )
+                 $c->_debug_msg( 'DECLINED to Apache' )
                     if ( $c->config->{static}->{debug} );          
                  $c->_static_apache_mode( $engine );
                  return;
@@ -352,6 +376,35 @@ For example:
             die "No customer dir defined.";
         }
     }
+    
+=head2 Ignoring certain types of files
+
+There are some file types you may not wish to serve as static files.  Most
+important in this category are your raw template files.  By default, files
+with the extensions tt, html, and xhtml will be ignored by Static::Simple in
+the interest of security.  If you wish to define your own extensions to
+ignore, use the ignore_extensions option:
+
+    MyApp->config->{static}->{ignore_extensions} = [ qw/tt html xhtml/ ];
+    
+=head2 Ignoring entire directories
+
+To prevent an entire directory from being served statically, you can use the
+ignore_dirs option.  This option contains a list of relative directory paths
+to ignore.  If using include_path, the path will be checked against every
+included path.
+
+    MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
+    
+For example, if combined with the above include_path setting, this
+ignore_dirs value will ignore the following directories if they exist:
+
+    /path/to/overlay/tmpl
+    /path/to/overlay/css
+    /dynamic/path/tmpl
+    /dynamic/path/css
+    /your/app/home/root/tmpl
+    /your/app/home/root/css    
 
 =head2 Custom MIME types
 
