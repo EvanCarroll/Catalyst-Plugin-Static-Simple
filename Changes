@@ -1,6 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.09
+0.09    2005-10-07 13:40:00
         - Added new configuration options to improve security:
           ignore_extensions - keep certain extensions from being static
           - This option defaults to tt, html, and xhtml to prevent
