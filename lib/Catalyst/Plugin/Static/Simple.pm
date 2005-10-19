@@ -2,16 +2,18 @@ package Catalyst::Plugin::Static::Simple;
 
 use strict;
 use base qw/Class::Accessor::Fast Class::Data::Inheritable/;
-use File::Slurp;
 use File::stat;
 use MIME::Types;
 use NEXT;
 
-our $VERSION = '0.09';
+if ( Catalyst->VERSION le '5.33' ) {
+    require File::Slurp;
+}
+
+our $VERSION = '0.10';
 
 __PACKAGE__->mk_classdata( qw/_static_mime_types/ );
 __PACKAGE__->mk_accessors( qw/_static_file
-                              _static_apache_mode
                               _static_debug_message/ );
 
 # prepare_action is used to first check if the request path is a static file.
@@ -76,21 +78,6 @@ sub finalize {
 	    join( " ", @{$c->_debug_msg} ) );
     }
     
-    # return DECLINED when under mod_perl
-    if ( $c->config->{static}->{use_apache} && $c->_static_apache_mode ) {
-        my $engine = $c->_static_apache_mode;
-        no strict 'subs';
-        if ( $engine == 13 ) {
-            return Apache::Constants::DECLINED;
-        }
-        elsif ( $engine == 19 ) {
-            return Apache::Const::DECLINED;
-        }
-        elsif ( $engine == 20 ) {
-            return Apache2::Const::DECLINED;
-        }
-    }
-    
     if ( $c->res->status =~ /^(1\d\d|[23]04)$/xms ) {
         $c->res->headers->remove_content_headers;
         return $c->finalize_headers;
@@ -107,9 +94,8 @@ sub setup {
     $c->config->{static}->{dirs} ||= [];
     $c->config->{static}->{include_path} ||= [ $c->config->{root} ];
     $c->config->{static}->{mime_types} ||= {};
-    $c->config->{static}->{ignore_extensions} ||= [ qw/tt html xhtml/ ];
+    $c->config->{static}->{ignore_extensions} ||= [ qw/tt tt2 html xhtml/ ];
     $c->config->{static}->{ignore_dirs} ||= [];
-    $c->config->{static}->{use_apache} ||= 0;
     $c->config->{static}->{debug} ||= $c->debug;
     if ( ! defined $c->config->{static}->{no_logs} ) {
         $c->config->{static}->{no_logs} = 1;
@@ -184,42 +170,6 @@ sub _serve_static {
     my $c = shift;
     
     my $path = $c->req->path;    
-    
-    # abort if running under mod_perl
-    # note that we do not use the Apache method if the user has defined
-    # custom MIME types or is using include paths, as Apache would not know
-    # about them
-    APACHE_CHECK:
-    {
-        if ( $c->config->{static}->{use_apache} ) {
-            # check engine version
-            last APACHE_CHECK unless $c->engine =~ /Apache::MP(\d{2})/xms;
-            my $engine = $1;
-    
-            # skip if we have user-defined MIME types
-            last APACHE_CHECK if keys %{ $c->config->{static}->{mime_types} };
-            
-            # skip if the file is in a user-defined include path
-            last APACHE_CHECK if $c->_static_file 
-                ne $c->config->{root} . '/' . $path;
-    
-             # check that Apache will serve the correct file
-             if ( $c->apache->document_root ne $c->config->{root} ) {
-                 $c->log->warn( 'Static::Simple: Your Apache DocumentRoot'
-                              . ' must be set to ' . $c->config->{root} 
-                              . ' to use the Apache feature.  Yours is'
-                              . ' currently ' . $c->apache->document_root
-                              );
-             }
-             else {
-                 $c->_debug_msg( 'DECLINED to Apache' )
-                    if ( $c->config->{static}->{debug} );          
-                 $c->_static_apache_mode( $engine );
-                 return;
-             }
-        }
-    }
-    
     my $type = $c->_ext_to_type;
     
     my $full_path = $c->_static_file;
@@ -233,12 +183,27 @@ sub _serve_static {
             return 1;
         }
     }
-
-    my $content = read_file( $full_path );
+    
     $c->res->headers->content_type( $type );
     $c->res->headers->content_length( $stat->size );
     $c->res->headers->last_modified( $stat->mtime );
-    $c->res->output( $content );
+
+    if ( Catalyst->VERSION le '5.33' ) {
+        # old File::Slurp method
+        my $content = File::Slurp::read_file( $full_path );
+        $c->res->output( $content );
+    }
+    else {
+        # new write method
+        open my $fh, '<', $full_path 
+            or Catalyst::Exception->throw( 
+                message => "Unable to open $full_path for reading" );
+        while ( $fh->read( my $buffer, 4096 ) ) {
+            $c->res->write( $buffer );
+        }
+        close $fh;
+    }
+    
     return 1;
 }
 
@@ -381,11 +346,11 @@ For example:
 
 There are some file types you may not wish to serve as static files.  Most
 important in this category are your raw template files.  By default, files
-with the extensions tt, html, and xhtml will be ignored by Static::Simple in
-the interest of security.  If you wish to define your own extensions to
+with the extensions tt, tt2, html, and xhtml will be ignored by Static::Simple
+in the interest of security.  If you wish to define your own extensions to
 ignore, use the ignore_extensions option:
 
-    MyApp->config->{static}->{ignore_extensions} = [ qw/tt html xhtml/ ];
+    MyApp->config->{static}->{ignore_extensions} = [ qw/tt tt2 html xhtml/ ];
     
 =head2 Ignoring entire directories
 
@@ -416,31 +381,6 @@ you may enter your own extension to MIME type mapping.
         png => 'image/png',
     };
 
-=head2 Apache integration and performance
-
-Optionally, when running under mod_perl, Static::Simple can return DECLINED
-on static files to allow Apache to serve the file.  A check is first done to
-make sure that Apache's DocumentRoot matches your Catalyst root, and that you
-are not using any custom MIME types or multiple roots.  To enable the Apache
-support, you can set the following option.
-
-    MyApp->config->{static}->{use_apache} = 1;
-    
-By default this option is disabled because after several benchmarks it
-appears that just serving the file from Catalyst is the better option.  On a
-3K file, Catalyst appears to be around 25% faster, and is 42% faster on a 10K
-file.  My benchmarking was done using the following 'siege' command, so other
-benchmarks would be welcome!
-
-    siege -u http://server/static/css/10K.css -b -t 1M -c 1
-
-For best static performance, you should still serve your static files directly
-from Apache by defining a Location block similar to the following:
-
-    <Location /static>
-        SetHandler default-handler
-    </Location>
-
 =head2 Bypassing other plugins
 
 This plugin checks for a static file in the prepare_action stage.  If the
@@ -459,6 +399,18 @@ Enable additional debugging information printed in the Catalyst log.  This
 is automatically enabled when running Catalyst in -Debug mode.
 
     MyApp->config->{static}->{debug} = 1;
+    
+=head1 USING WITH APACHE
+
+While Static::Simple will work just fine serving files through Catalyst in
+mod_perl, for increased performance, you may wish to have Apache handle the
+serving of your static files.  To do this, simply use a dedicated directory
+for your static files and configure an Apache Location block for that
+directory.  This approach is recommended for production installations.
+
+    <Location /static>
+        SetHandler default-handler
+    </Location>
 
 =head1 SEE ALSO
 

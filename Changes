@@ -1,5 +1,15 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.10    
+        - Added tt2 to the list of ignored extensions.
+        - For Catalyst 5.5+, replaced File::Slurp with a buffered read/write
+          process.  This will improve memory usage and performance on larger
+          static files.
+        - Removed Apache integration feature.  It is slower than serving
+          through Catalyst and as far as I know no one is using it.  If you
+          need the best performance, use a separate Location block for static
+          content.
+
 0.09    2005-10-07 13:40:00
         - Added new configuration options to improve security:
           ignore_extensions - keep certain extensions from being static
