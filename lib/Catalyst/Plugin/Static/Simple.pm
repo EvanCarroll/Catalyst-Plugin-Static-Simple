@@ -1,6 +1,7 @@
 package Catalyst::Plugin::Static::Simple;
 
 use strict;
+use warnings;
 use base qw/Class::Accessor::Fast Class::Data::Inheritable/;
 use File::stat;
 use MIME::Types;
@@ -30,7 +31,7 @@ sub prepare_action {
         }
         if ( $path =~ $re ) {
             if ( $c->_locate_static_file ) {
-                $c->_debug_msg( "from static directory" )
+                $c->_debug_msg( 'from static directory' )
                     if ( $c->config->{static}->{debug} );
                 return;
             } else {
@@ -74,8 +75,8 @@ sub finalize {
     
     # display all log messages
     if ( $c->config->{static}->{debug} && scalar @{$c->_debug_msg} ) {
-	$c->log->debug( "Static::Simple: " .
-	    join( " ", @{$c->_debug_msg} ) );
+	$c->log->debug( 'Static::Simple: ' .
+        join q{ }, @{$c->_debug_msg} );
     }
     
     if ( $c->res->status =~ /^(1\d\d|[23]04)$/xms ) {
@@ -127,9 +128,9 @@ sub _locate_static_file {
         if ( ref $dir eq 'CODE' ) {
             eval { $dpaths = &$dir( $c ) };
             if ($@) {
-                $c->log->error( "Static::Simple: include_path error: " . $@ );
+                $c->log->error( 'Static::Simple: include_path error: ' . $@ );
             } else {
-                unshift( @ipaths, @$dpaths );
+                unshift @ipaths, @$dpaths;
                 next DIR_CHECK;
             }
         } else {
@@ -173,7 +174,7 @@ sub _serve_static {
     my $type = $c->_ext_to_type;
     
     my $full_path = $c->_static_file;
-    my $stat = stat( $full_path );
+    my $stat = stat $full_path;
 
     # the below code all from C::P::Static
     if ( $c->req->headers->if_modified_since ) {
