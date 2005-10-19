@@ -75,8 +75,7 @@ sub finalize {
     
     # display all log messages
     if ( $c->config->{static}->{debug} && scalar @{$c->_debug_msg} ) {
-	$c->log->debug( 'Static::Simple: ' .
-        join q{ }, @{$c->_debug_msg} );
+        $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
     
     if ( $c->res->status =~ /^(1\d\d|[23]04)$/xms ) {
