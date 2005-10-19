@@ -12,7 +12,10 @@ TestApp->config(
 my @plugins = qw/Static::Simple/;
 
 # load the SubRequest plugin if available
-eval "use Catalyst::Plugin::SubRequest 0.08";
+eval { 
+    require Catalyst::Plugin::SubRequest; 
+    die unless Catalyst::Plugin::SubRequest->VERSION ge '0.08';
+};
 push @plugins, 'SubRequest' unless ($@);
 
 TestApp->setup( @plugins );
