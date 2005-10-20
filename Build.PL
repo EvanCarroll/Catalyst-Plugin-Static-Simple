@@ -23,7 +23,7 @@ if ( $cat->{have} le '5.33' ) {
 
 # If the user has the SubRequest plugin installed, tell them to upgrade
 my $subreq = $build->check_installed_status('Catalyst::Plugin::SubRequest');
-if ( $subreq->{have} le '0.08' ) {
+if ( $subreq->{have} lt '0.08' ) {
     print "** WARNING **\n"
         . "You appear to have a version of Catalyst::Plugin::SubRequest "
         . "older than 0.08.\n"

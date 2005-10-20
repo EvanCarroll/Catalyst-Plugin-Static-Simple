@@ -1,5 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.11    
+        - Changed 5.5 writing method to pass an IO::File object directly to
+          $c->res->body.
+
 0.10    2005-10-19 17:20:00
         - Added tt2 to the list of ignored extensions.
         - For Catalyst 5.5+, replaced File::Slurp with a buffered read/write
