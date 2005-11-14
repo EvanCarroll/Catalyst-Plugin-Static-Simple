@@ -3,7 +3,7 @@ Revision history for Perl extension Catalyst::Plugin::Static::Simple
 0.11    
         - Removed the code that set the 304 Not Modified header.  This caused
           problems with IE under Apache.
-        - Changed 5.5 writing method to pass an IO::File object directly to
+        - Changed 5.50 writing method to pass an IO::File object directly to
           $c->res->body.
         - This version is included with Catalyst 5.50.
 

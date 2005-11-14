@@ -1,6 +1,6 @@
 ---
 name: Catalyst-Plugin-Static-Simple
-version: 0.10
+version: 0.11
 author:
   - 'Andy Grundman, <andy@hybridized.org>'
 abstract: Make serving static pages painless.
