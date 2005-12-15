@@ -1,6 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.12
+0.13    2005-12-15 10:00:00
+        - Fixed bug in ignore_dirs under win32.
+
+0.12    (released only with Catalyst)
         - Made prepare_action play nice with other plugins by not short-
           circuiting.
         - Added tmpl to the ignored extensions.
