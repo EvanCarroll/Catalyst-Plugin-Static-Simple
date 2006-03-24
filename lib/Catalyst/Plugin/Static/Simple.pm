@@ -9,7 +9,7 @@ use IO::File;
 use MIME::Types;
 use NEXT;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 __PACKAGE__->mk_classdata( qw/_static_mime_types/ );
 __PACKAGE__->mk_accessors( qw/_static_file
@@ -18,6 +18,8 @@ __PACKAGE__->mk_accessors( qw/_static_file
 sub prepare_action {
     my $c = shift;
     my $path = $c->req->path;
+    
+    $path =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
     # is the URI in a static-defined path?
     foreach my $dir ( @{ $c->config->{static}->{dirs} } ) {
@@ -26,7 +28,7 @@ sub prepare_action {
             $c->error( "Error compiling static dir regex '$dir': $@" );
         }
         if ( $path =~ $re ) {
-            if ( $c->_locate_static_file ) {
+            if ( $c->_locate_static_file( $path ) ) {
                 $c->_debug_msg( 'from static directory' )
                     if ( $c->config->{static}->{debug} );
             } else {
@@ -40,7 +42,7 @@ sub prepare_action {
     # Does the path have an extension?
     if ( $path =~ /.*\.(\S{1,})$/xms ) {
         # and does it exist?
-        $c->_locate_static_file;
+        $c->_locate_static_file( $path );
     }
     
     return $c->NEXT::ACTUAL::prepare_action(@_);
@@ -109,9 +111,9 @@ sub setup {
 # Search through all included directories for the static file
 # Based on Template Toolkit INCLUDE_PATH code
 sub _locate_static_file {
-    my $c = shift;
+    my ( $c, $path ) = @_;
     
-    my $path = catdir( no_upwards( splitdir( $c->req->path ) ) );
+    $path = catdir( no_upwards( splitdir( $path ) ) );
     
     my @ipaths = @{ $c->config->{static}->{include_path} };
     my $dpaths;
@@ -165,12 +167,10 @@ sub _locate_static_file {
 
 sub _serve_static {
     my $c = shift;
-    
-    my $path = $c->req->path;    
-    my $type = $c->_ext_to_type;
-    
+           
     my $full_path = $c->_static_file;
-    my $stat = stat $full_path;
+    my $type      = $c->_ext_to_type( $full_path );
+    my $stat      = stat $full_path;
 
     $c->res->headers->content_type( $type );
     $c->res->headers->content_length( $stat->size );
@@ -199,10 +199,9 @@ sub _serve_static {
 
 # looks up the correct MIME type for the current file extension
 sub _ext_to_type {
-    my $c = shift;
-    my $path = $c->req->path;
+    my ( $c, $full_path ) = @_;
     
-    if ( $path =~ /.*\.(\S{1,})$/xms ) {
+    if ( $full_path =~ /.*\.(\S{1,})$/xms ) {
         my $ext = $1;
         my $user_types = $c->config->{static}->{mime_types};
         my $type = $user_types->{$ext} 

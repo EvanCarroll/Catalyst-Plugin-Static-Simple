@@ -1,5 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.14    2006-03-24 11:15:00
+        - Unescape the URI path before looking for the file.  This fixes
+		  issues with files that have spaces.
+
 0.13    2005-12-15 10:00:00
         - Fixed bug in ignore_dirs under win32.
         - Doc rewriting
