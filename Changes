@@ -1,5 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.15
+        - store Mime::Types object in config hash instead of as classdata
+        - cleanup code a bit
+
 0.14    2006-03-24 11:15:00
         - Unescape the URI path before looking for the file.  This fixes
 		  issues with files that have spaces.

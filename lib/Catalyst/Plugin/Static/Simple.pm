@@ -4,36 +4,34 @@ use strict;
 use warnings;
 use base qw/Class::Accessor::Fast Class::Data::Inheritable/;
 use File::stat;
-use File::Spec::Functions qw/catdir no_upwards splitdir/;
-use IO::File;
-use MIME::Types;
-use NEXT;
+use File::Spec ();
+use IO::File ();
+use MIME::Types ();
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
-__PACKAGE__->mk_classdata( qw/_static_mime_types/ );
-__PACKAGE__->mk_accessors( qw/_static_file
-                              _static_debug_message/ );
+__PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
 sub prepare_action {
     my $c = shift;
     my $path = $c->req->path;
+    my $config = $c->config->{static};
     
     $path =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
     # is the URI in a static-defined path?
-    foreach my $dir ( @{ $c->config->{static}->{dirs} } ) {
-        my $re = ( $dir =~ /^qr\//xms ) ? eval $dir : qr/^${dir}/;
+    foreach my $dir ( @{ $config->{dirs} } ) {
+        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr/^${dir}/;
         if ($@) {
             $c->error( "Error compiling static dir regex '$dir': $@" );
         }
         if ( $path =~ $re ) {
             if ( $c->_locate_static_file( $path ) ) {
                 $c->_debug_msg( 'from static directory' )
-                    if ( $c->config->{static}->{debug} );
+                    if $config->{debug};
             } else {
                 $c->_debug_msg( "404: file not found: $path" )
-                    if ( $c->config->{static}->{debug} );
+                    if $config->{debug};
                 $c->res->status( 404 );
             }
         }
@@ -54,7 +52,7 @@ sub dispatch {
     return if ( $c->res->status != 200 );
     
     if ( $c->_static_file ) {
-        if ( $c->config->{static}->{no_logs} && $c->log->can('abort') ) {
+        if ( $c->config->{static}{no_logs} && $c->log->can('abort') ) {
            $c->log->abort( 1 );
         }
         return $c->_serve_static;
@@ -68,7 +66,7 @@ sub finalize {
     my $c = shift;
     
     # display all log messages
-    if ( $c->config->{static}->{debug} && scalar @{$c->_debug_msg} ) {
+    if ( $c->config->{static}{debug} && scalar @{$c->_debug_msg} ) {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
     
@@ -89,23 +87,22 @@ sub setup {
         require File::Slurp;
     }
     
-    $c->config->{static}->{dirs} ||= [];
-    $c->config->{static}->{include_path} ||= [ $c->config->{root} ];
-    $c->config->{static}->{mime_types} ||= {};
-    $c->config->{static}->{ignore_extensions} 
-        ||= [ qw/tmpl tt tt2 html xhtml/ ];
-    $c->config->{static}->{ignore_dirs} ||= [];
-    $c->config->{static}->{debug} ||= $c->debug;
-    if ( ! defined $c->config->{static}->{no_logs} ) {
-        $c->config->{static}->{no_logs} = 1;
-    }    
+    my $config = $c->config->{static} ||= {};
+    
+    $config->{dirs} ||= [];
+    $config->{include_path} ||= [ $c->config->{root} ];
+    $config->{mime_types} ||= {};
+    $config->{ignore_extensions} ||= [ qw/tmpl tt tt2 html xhtml/ ];
+    $config->{ignore_dirs} ||= [];
+    $config->{debug} ||= $c->debug;
+    $config->{no_logs} = 1 unless defined $config->{no_logs};
     
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
-    $c->_static_mime_types( MIME::Types->new( only_complete => 1 ) );
+    $config->{mime_types_obj} = MIME::Types->new( only_complete => 1 );
     
     # preload the type index hash so it's not built on the first request
-    $c->_static_mime_types->create_type_index;
+    $config->{mime_types_obj}->create_type_index;
 }
 
 # Search through all included directories for the static file
@@ -113,9 +110,12 @@ sub setup {
 sub _locate_static_file {
     my ( $c, $path ) = @_;
     
-    $path = catdir( no_upwards( splitdir( $path ) ) );
+    $path = File::Spec->catdir(
+        File::Spec->no_upwards( File::Spec->splitdir( $path ) ) 
+    );
     
-    my @ipaths = @{ $c->config->{static}->{include_path} };
+    my $config = $c->config->{static};
+    my @ipaths = @{ $config->{include_path} };
     my $dpaths;
     my $count = 64; # maximum number of directories to search
     
@@ -136,27 +136,26 @@ sub _locate_static_file {
             if ( -d $dir && -f $dir . '/' . $path ) {
                 
                 # do we need to ignore the file?
-                for my $ignore ( @{ $c->config->{static}->{ignore_dirs} } ) {
+                for my $ignore ( @{ $config->{ignore_dirs} } ) {
                     $ignore =~ s{(/|\\)$}{};
                     if ( $path =~ /^$ignore(\/|\\)/ ) {
                         $c->_debug_msg( "Ignoring directory `$ignore`" )
-                            if ( $c->config->{static}->{debug} );
+                            if $config->{debug};
                         next DIR_CHECK;
                     }
                 }
                 
                 # do we need to ignore based on extension?
-                for my $ignore_ext 
-                    ( @{ $c->config->{static}->{ignore_extensions} } ) {
-                        if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
-                            $c->_debug_msg( "Ignoring extension `$ignore_ext`" )
-                                if ( $c->config->{static}->{debug} );
-                            next DIR_CHECK;
-                        }
+                for my $ignore_ext ( @{ $config->{ignore_extensions} } ) {
+                    if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
+                        $c->_debug_msg( "Ignoring extension `$ignore_ext`" )
+                            if $config->{debug};
+                        next DIR_CHECK;
+                    }
                 }
                 
                 $c->_debug_msg( 'Serving ' . $dir . '/' . $path )
-                    if ( $c->config->{static}->{debug} );
+                    if $config->{debug};
                 return $c->_static_file( $dir . '/' . $path );
             }
         }
@@ -201,25 +200,25 @@ sub _serve_static {
 sub _ext_to_type {
     my ( $c, $full_path ) = @_;
     
+    my $config = $c->config->{static};
+    
     if ( $full_path =~ /.*\.(\S{1,})$/xms ) {
         my $ext = $1;
-        my $user_types = $c->config->{static}->{mime_types};
-        my $type = $user_types->{$ext} 
-                || $c->_static_mime_types->mimeTypeOf( $ext );
+        my $type = $config->{mime_types}{$ext} 
+            || $config->{mime_types_obj}->mimeTypeOf( $ext );
         if ( $type ) {
-            $c->_debug_msg( "as $type" )
-                if ( $c->config->{static}->{debug} );            
+            $c->_debug_msg( "as $type" ) if $config->{debug};
             return ( ref $type ) ? $type->type : $type;
         }
         else {
             $c->_debug_msg( "as text/plain (unknown extension $ext)" )
-                if ( $c->config->{static}->{debug} );
+                if $config->{debug};
             return 'text/plain';
         }
     }
     else {
         $c->_debug_msg( 'as text/plain (no extension)' )
-            if ( $c->config->{static}->{debug} );
+            if $config->{debug};
         return 'text/plain';
     }
 }
