@@ -21,7 +21,8 @@ sub prepare_action {
 
     # is the URI in a static-defined path?
     foreach my $dir ( @{ $config->{dirs} } ) {
-        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr/^${dir}/;
+        my $dir_re = quotemeta $dir;
+        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr/^${dir_re}/;
         if ($@) {
             $c->error( "Error compiling static dir regex '$dir': $@" );
         }

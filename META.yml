@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Catalyst-Plugin-Static-Simple
-version: 0.14
+version: 0.15
 author:
   - Andy Grundman, <andy@hybridized.org>
 abstract: Make serving static pages painless.

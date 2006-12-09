@@ -1,6 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.15
+0.15    2006-12-08 22:30:00
+        - Quote metacharacters used in $c->config->{dirs} (Vlad Dan Dascalescu)
         - store Mime::Types object in config hash instead of as classdata
         - cleanup code a bit
 
