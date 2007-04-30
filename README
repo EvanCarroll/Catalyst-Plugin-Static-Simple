@@ -4,40 +4,63 @@ NAME
 SYNOPSIS
         use Catalyst;
         MyApp->setup( qw/Static::Simple/ );
+        # that's it; static content is automatically served by
+        # Catalyst, though you can configure things or bypass
+        # Catalyst entirely in a production environment
 
 DESCRIPTION
     The Static::Simple plugin is designed to make serving static content in
     your application during development quick and easy, without requiring a
     single line of code from you.
 
-    It will detect static files used in your application by looking for file
-    extensions in the URI. By default, you can simply load this plugin and
-    it will immediately begin serving your static files with the correct
-    MIME type. The light-weight MIME::Types module is used to map file
-    extensions to IANA-registered MIME types.
+    This plugin detects static files by looking at the file extension in the
+    URL (such as .css or .png or .js). The plugin uses the lightweight
+    MIME::Types module to map file extensions to IANA-registered MIME types,
+    and will serve your static files with the correct MIME type directly to
+    the browser, without being processed through Catalyst.
 
     Note that actions mapped to paths using periods (.) will still operate
     properly.
 
-    You may further tweak the operation by adding configuration options,
-    described below.
+    Though Static::Simple is designed to work out-of-the-box, you can tweak
+    the operation by adding various configuration options. In a production
+    environment, you will probably want to use your webserver to deliver
+    static content; for an example see "USING WITH APACHE", below.
+
+DEFAULT BEHAVIOR
+    By default, Static::Simple will deliver all files having extensions
+    (that is, bits of text following a period (".")), *except* files having
+    the extensions "tmpl", "tt", "tt2", "html", and "xhtml". These files,
+    and all files without extensions, will be processed through Catalyst. If
+    MIME::Types doesn't recognize an extension, it will be served as
+    "text/plain".
+
+    To restate: files having the extensions "tmpl", "tt", "tt2", "html", and
+    "xhtml" *will not* be served statically by default, they will be
+    processed by Catalyst. Thus if you want to use ".html" files from within
+    a Catalyst app as static files, you need to change the configuration of
+    Static::Simple. Note also that files having any other extension *will*
+    be served statically, so if you're using any other extension for
+    template files, you should also change the configuration.
+
+    Logging of static files is turned off by default.
 
 ADVANCED CONFIGURATION
     Configuration is completely optional and is specified within
-    MyApp->config->{static}. If you use any of these options, the module
+    "MyApp->config->{static}". If you use any of these options, this module
     will probably feel less "simple" to you!
 
-  Aborting request logging
-    Since Catalyst 5.50, there has been added support for dropping logging
-    for a request. This is enabled by default for static files, as static
-    requests tend to clutter the log output. However, if you want logging of
-    static requests, you can enable it by setting
-    MyApp->config->{static}->{no_logs} to 0.
+  Enabling request logging
+    Since Catalyst 5.50, logging of static requests is turned off by
+    default; static requests tend to clutter the log output and rarely
+    reveal anything useful. However, if you want to enable logging of static
+    requests, you can do so by setting "MyApp->config->{static}->{no_logs}"
+    to 0.
 
   Forcing directories into static mode
     Define a list of top-level directories beneath your 'root' directory
     that should always be served in static mode. Regular expressions may be
-    specified using qr//.
+    specified using "qr//".
 
         MyApp->config->{static}->{dirs} = [
             'static',
@@ -48,8 +71,8 @@ ADVANCED CONFIGURATION
     You may specify a list of directories in which to search for your static
     files. The directories will be searched in order and will return the
     first file found. Note that your root directory is not automatically
-    added to the search path when you specify an include_path. You should
-    use MyApp->config->{root} to add it.
+    added to the search path when you specify an "include_path". You should
+    use "MyApp->config->{root}" to add it.
 
         MyApp->config->{static}->{include_path} = [
             '/path/to/overlay',
@@ -57,7 +80,7 @@ ADVANCED CONFIGURATION
             MyApp->config->{root}
         ];
     
-    With the above setting, a request for the file /images/logo.jpg will
+    With the above setting, a request for the file "/images/logo.jpg" will
     search for the following files, returning the first one found:
 
         /path/to/overlay/images/logo.jpg
@@ -67,7 +90,7 @@ ADVANCED CONFIGURATION
     The include path can contain a subroutine reference to dynamically
     return a list of available directories. This method will receive the $c
     object as a parameter and should return a reference to a list of
-    directories. Errors can be reported using die(). This method will be
+    directories. Errors can be reported using "die()". This method will be
     called every time a file is requested that appears to be a static file
     (i.e. it has an extension).
 
@@ -86,22 +109,24 @@ ADVANCED CONFIGURATION
   Ignoring certain types of files
     There are some file types you may not wish to serve as static files.
     Most important in this category are your raw template files. By default,
-    files with the extensions tt, html, and xhtml will be ignored by
-    Static::Simple in the interest of security. If you wish to define your
-    own extensions to ignore, use the ignore_extensions option:
+    files with the extensions "tmpl", "tt", "tt2", "html", and "xhtml" will
+    be ignored by Static::Simple in the interest of security. If you wish to
+    define your own extensions to ignore, use the "ignore_extensions"
+    option:
 
-        MyApp->config->{static}->{ignore_extensions} = [ qw/tt html xhtml/ ];
+        MyApp->config->{static}->{ignore_extensions} 
+            = [ qw/html asp php/ ];
     
   Ignoring entire directories
     To prevent an entire directory from being served statically, you can use
-    the ignore_dirs option. This option contains a list of relative
-    directory paths to ignore. If using include_path, the path will be
+    the "ignore_dirs" option. This option contains a list of relative
+    directory paths to ignore. If using "include_path", the path will be
     checked against every included path.
 
         MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
     
-    For example, if combined with the above include_path setting, this
-    ignore_dirs value will ignore the following directories if they exist:
+    For example, if combined with the above "include_path" setting, this
+    "ignore_dirs" value will ignore the following directories if they exist:
 
         /path/to/overlay/tmpl
         /path/to/overlay/css
@@ -119,48 +144,52 @@ ADVANCED CONFIGURATION
             png => 'image/png',
         };
 
-  Apache integration and performance
-    Optionally, when running under mod_perl, Static::Simple can return
-    DECLINED on static files to allow Apache to serve the file. A check is
-    first done to make sure that Apache's DocumentRoot matches your Catalyst
-    root, and that you are not using any custom MIME types or multiple
-    roots. To enable the Apache support, you can set the following option.
-
-        MyApp->config->{static}->{use_apache} = 1;
-    
-    By default this option is disabled because after several benchmarks it
-    appears that just serving the file from Catalyst is the better option.
-    On a 3K file, Catalyst appears to be around 25% faster, and is 42%
-    faster on a 10K file. My benchmarking was done using the following
-    'siege' command, so other benchmarks would be welcome!
-
-        siege -u http://server/static/css/10K.css -b -t 1M -c 1
-
-    For best static performance, you should still serve your static files
-    directly from Apache by defining a Location block similar to the
-    following:
-
-        <Location /static>
-            SetHandler default-handler
-        </Location>
-
-  Bypassing other plugins
-    This plugin checks for a static file in the prepare_action stage. If the
-    request is for a static file, it will bypass all remaining
-    prepare_action steps. This means that by placing Static::Simple before
-    all other plugins, they will not execute when a static file is found.
-    This can be helpful by skipping session cookie checks for example. Or,
-    if you want some plugins to run even on static files, list them before
-    Static::Simple.
-
-    Currently, work done by plugins in any other prepare method will execute
-    normally.
+  Compatibility with other plugins
+    Since version 0.12, Static::Simple plays nice with other plugins. It no
+    longer short-circuits the "prepare_action" stage as it was causing too
+    many compatibility issues with other plugins.
 
   Debugging information
     Enable additional debugging information printed in the Catalyst log.
     This is automatically enabled when running Catalyst in -Debug mode.
 
         MyApp->config->{static}->{debug} = 1;
+    
+USING WITH APACHE
+    While Static::Simple will work just fine serving files through Catalyst
+    in mod_perl, for increased performance, you may wish to have Apache
+    handle the serving of your static files. To do this, simply use a
+    dedicated directory for your static files and configure an Apache
+    Location block for that directory. This approach is recommended for
+    production installations.
+
+        <Location /static>
+            SetHandler default-handler
+        </Location>
+
+    Using this approach Apache will bypass any handling of these directories
+    through Catalyst. You can leave Static::Simple as part of your
+    application, and it will continue to function on a development server,
+    or using Catalyst's built-in server.
+
+INTERNAL EXTENDED METHODS
+    Static::Simple extends the following steps in the Catalyst process.
+
+  prepare_action
+    "prepare_action" is used to first check if the request path is a static
+    file. If so, we skip all other "prepare_action" steps to improve
+    performance.
+
+  dispatch
+    "dispatch" takes the file found during "prepare_action" and writes it to
+    the output.
+
+  finalize
+    "finalize" serves up final header information and displays any log
+    messages.
+
+  setup
+    "setup" initializes all default values.
 
 SEE ALSO
     Catalyst, Catalyst::Plugin::Static,
@@ -170,7 +199,7 @@ AUTHOR
     Andy Grundman, <andy@hybridized.org>
 
 CONTRIBUTORS
-    Marcus Ramberg, <mramberg@cpan.org>
+    Marcus Ramberg, <mramberg@cpan.org> Jesse Sheidlower, <jester@panix.com>
 
 THANKS
     The authors of Catalyst::Plugin::Static:
