@@ -8,7 +8,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -27,7 +27,7 @@ sub prepare_action {
             $c->error( "Error compiling static dir regex '$dir': $@" );
         }
         if ( $path =~ $re ) {
-            if ( $c->_locate_static_file( $path ) ) {
+            if ( $c->_locate_static_file( $path, 1 ) ) {
                 $c->_debug_msg( 'from static directory' )
                     if $config->{debug};
             } else {
@@ -71,11 +71,6 @@ sub finalize {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
     
-    if ( $c->res->status =~ /^(1\d\d|[23]04)$/xms ) {
-        $c->res->headers->remove_content_headers;
-        return $c->finalize_headers;
-    }
-    
     return $c->NEXT::ACTUAL::finalize(@_);
 }
 
@@ -109,7 +104,7 @@ sub setup {
 # Search through all included directories for the static file
 # Based on Template Toolkit INCLUDE_PATH code
 sub _locate_static_file {
-    my ( $c, $path ) = @_;
+    my ( $c, $path, $in_static_dir ) = @_;
     
     $path = File::Spec->catdir(
         File::Spec->no_upwards( File::Spec->splitdir( $path ) ) 
@@ -136,22 +131,25 @@ sub _locate_static_file {
             $dir =~ s/(\/|\\)$//xms;
             if ( -d $dir && -f $dir . '/' . $path ) {
                 
-                # do we need to ignore the file?
-                for my $ignore ( @{ $config->{ignore_dirs} } ) {
-                    $ignore =~ s{(/|\\)$}{};
-                    if ( $path =~ /^$ignore(\/|\\)/ ) {
-                        $c->_debug_msg( "Ignoring directory `$ignore`" )
-                            if $config->{debug};
-                        next DIR_CHECK;
+                # Don't ignore any files in static dirs defined with 'dirs'
+                unless ( $in_static_dir ) {
+                    # do we need to ignore the file?
+                    for my $ignore ( @{ $config->{ignore_dirs} } ) {
+                        $ignore =~ s{(/|\\)$}{};
+                        if ( $path =~ /^$ignore(\/|\\)/ ) {
+                            $c->_debug_msg( "Ignoring directory `$ignore`" )
+                                if $config->{debug};
+                            next DIR_CHECK;
+                        }
                     }
-                }
                 
-                # do we need to ignore based on extension?
-                for my $ignore_ext ( @{ $config->{ignore_extensions} } ) {
-                    if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
-                        $c->_debug_msg( "Ignoring extension `$ignore_ext`" )
-                            if $config->{debug};
-                        next DIR_CHECK;
+                    # do we need to ignore based on extension?
+                    for my $ignore_ext ( @{ $config->{ignore_extensions} } ) {
+                        if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
+                            $c->_debug_msg( "Ignoring extension `$ignore_ext`" )
+                                if $config->{debug};
+                            next DIR_CHECK;
+                        }
                     }
                 }
                 

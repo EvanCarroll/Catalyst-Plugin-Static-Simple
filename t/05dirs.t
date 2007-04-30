@@ -6,7 +6,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Catalyst::Test 'TestApp';
 
 # test defined static dirs
@@ -19,6 +19,10 @@ TestApp->config->{static}->{dirs} = [
 # a file with no extension will return text/plain
 ok( my $res = request('http://localhost/always-static/test'), 'request ok' );
 is( $res->content_type, 'text/plain', 'text/plain ok' );
+
+# a file with an extension in ignore_extensions still gets served
+ok( $res = request('http://localhost/always-static/test.html'), 'request ok' );
+is( $res->code, 200, 'html file in dirs get served' );
 
 # a missing file in a defined static dir will return 404
 ok( $res = request('http://localhost/always-static/404.txt'), 'request ok' );
