@@ -27,5 +27,5 @@
 # Don't ship the test db
 ^t/var
 
-# Module::Build can't handle files with spaces
+# Module::Install can't handle files with spaces
 t/lib/TestApp/root/files/space file.txt

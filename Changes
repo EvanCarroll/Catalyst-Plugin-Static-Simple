@@ -1,12 +1,12 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.16    
+0.16    2007-04-30 15:00:00
         - Allow all files in directories defined by the config option 'dirs'
           to be served as static even if the file matches ignore_dirs or
           ignore_extensions.
         - Fixed bug where 204 or 304 status codes would result in a 500 error
           under mod_perl.
-        - Switch to Module::Install
+        - Switch to Module::Install.
 
 0.15    2006-12-08 22:30:00
         - Quote metacharacters used in $c->config->{dirs} (Vlad Dan Dascalescu)
