@@ -8,7 +8,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -166,7 +166,7 @@ sub _locate_static_file {
 sub _serve_static {
     my $c = shift;
            
-    my $full_path = $c->_static_file;
+    my $full_path = shift || $c->_static_file;
     my $type      = $c->_ext_to_type( $full_path );
     my $stat      = stat $full_path;
 
@@ -193,6 +193,25 @@ sub _serve_static {
     }
     
     return 1;
+}
+
+sub serve_static_file {
+    my ( $c, $full_path ) = @_;
+
+    my $config = $c->config->{static} ||= {};
+    
+    if ( -e $full_path ) {
+        $c->_debug_msg( "Serving static file: $full_path" )
+            if $config->{debug};
+    }
+    else {
+        $c->_debug_msg( "404: file not found: $full_path" )
+            if $config->{debug};
+        $c->res->status( 404 );
+        return;
+    }
+
+    $c->_serve_static( $full_path );
 }
 
 # looks up the correct MIME type for the current file extension
@@ -426,6 +445,21 @@ through Catalyst. You can leave Static::Simple as part of your
 application, and it will continue to function on a development server,
 or using Catalyst's built-in server.
 
+=head1 PUBLIC METHODS
+
+=head2 serve_static_file $file_path
+
+Will serve the file located in $file_path statically. This is useful when
+you need to  autogenerate them if they don't exist, or they are stored in a model.
+
+    package MyApp::Controller::User;
+
+    sub curr_user_thumb : PathPart("my_thumbnail.png") {
+        my ( $self, $c ) = @_;
+        my $file_path = $c->user->picture_thumbnail_path;
+        $c->serve_static_file($file_path);
+    }
+
 =head1 INTERNAL EXTENDED METHODS
 
 Static::Simple extends the following steps in the Catalyst process.
@@ -462,7 +496,10 @@ Andy Grundman, <andy@hybridized.org>
 =head1 CONTRIBUTORS
 
 Marcus Ramberg, <mramberg@cpan.org>
+
 Jesse Sheidlower, <jester@panix.com>
+
+Guillermo Roditi, <groditi@cpan.org>
 
 =head1 THANKS
 
