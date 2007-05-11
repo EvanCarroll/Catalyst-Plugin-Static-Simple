@@ -172,6 +172,20 @@ USING WITH APACHE
     application, and it will continue to function on a development server,
     or using Catalyst's built-in server.
 
+PUBLIC METHODS
+  serve_static_file $file_path
+    Will serve the file located in $file_path statically. This is useful
+    when you need to autogenerate them if they don't exist, or they are
+    stored in a model.
+
+        package MyApp::Controller::User;
+
+        sub curr_user_thumb : PathPart("my_thumbnail.png") {
+            my ( $self, $c ) = @_;
+            my $file_path = $c->user->picture_thumbnail_path;
+            $c->serve_static_file($file_path);
+        }
+
 INTERNAL EXTENDED METHODS
     Static::Simple extends the following steps in the Catalyst process.
 
@@ -199,7 +213,11 @@ AUTHOR
     Andy Grundman, <andy@hybridized.org>
 
 CONTRIBUTORS
-    Marcus Ramberg, <mramberg@cpan.org> Jesse Sheidlower, <jester@panix.com>
+    Marcus Ramberg, <mramberg@cpan.org>
+
+    Jesse Sheidlower, <jester@panix.com>
+
+    Guillermo Roditi, <groditi@cpan.org>
 
 THANKS
     The authors of Catalyst::Plugin::Static:
