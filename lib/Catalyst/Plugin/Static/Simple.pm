@@ -8,7 +8,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -92,6 +92,7 @@ sub setup {
     $config->{ignore_dirs} ||= [];
     $config->{debug} ||= $c->debug;
     $config->{no_logs} = 1 unless defined $config->{no_logs};
+    $config->{no_logs} = 0 if $config->{logging};
     
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
@@ -322,7 +323,7 @@ Since Catalyst 5.50, logging of static requests is turned off by
 default; static requests tend to clutter the log output and rarely
 reveal anything useful. However, if you want to enable logging of static
 requests, you can do so by setting
-C<MyApp-E<gt>config-E<gt>{static}-E<gt>{no_logs}> to 0.
+C<MyApp-E<gt>config-E<gt>{static}-E<gt>{logging}> to 1.
 
 =head2 Forcing directories into static mode
 
