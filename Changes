@@ -1,6 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
-0.18
+0.18    2007-07-01 00:15:00
         - Logging may now be enabled with the less confusing
           MyApp->config->{static}->{logging} = 1;
 
