@@ -8,7 +8,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
