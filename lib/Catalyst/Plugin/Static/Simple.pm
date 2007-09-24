@@ -8,7 +8,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -22,7 +22,11 @@ sub prepare_action {
     # is the URI in a static-defined path?
     foreach my $dir ( @{ $config->{dirs} } ) {
         my $dir_re = quotemeta $dir;
-        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr/^${dir_re}/;
+        
+        # strip trailing slashes, they'll be added in our regex
+        $dir_re =~ s{/$}{};
+        
+        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr{^${dir_re}/};
         if ($@) {
             $c->error( "Error compiling static dir regex '$dir': $@" );
         }
@@ -34,6 +38,7 @@ sub prepare_action {
                 $c->_debug_msg( "404: file not found: $path" )
                     if $config->{debug};
                 $c->res->status( 404 );
+                $c->res->content_type( 'text/html' );
             }
         }
     }
@@ -209,6 +214,7 @@ sub serve_static_file {
         $c->_debug_msg( "404: file not found: $full_path" )
             if $config->{debug};
         $c->res->status( 404 );
+        $c->res->content_type( 'text/html' );
         return;
     }
 
