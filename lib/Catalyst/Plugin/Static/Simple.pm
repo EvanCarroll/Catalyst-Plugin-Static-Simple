@@ -475,6 +475,10 @@ files. The final configuration will look something like this:
         SetHandler default-handler
     </Location>
 
+If you are running in a VirtualHost, you can just set the DocumentRoot
+location to the location of your root directory; see 
+L<Catalyst::Engine::Apache2::MP20>.
+
 =head1 PUBLIC METHODS
 
 =head2 serve_static_file $file_path
