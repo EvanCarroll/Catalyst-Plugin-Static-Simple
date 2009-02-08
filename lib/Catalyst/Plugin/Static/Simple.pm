@@ -83,7 +83,7 @@ sub finalize {
 sub setup {
     my $c = shift;
     
-    $c->next::method(@_);
+    $c->maybe::next::method(@_);
     
     if ( Catalyst->VERSION le '5.33' ) {
         require File::Slurp;
