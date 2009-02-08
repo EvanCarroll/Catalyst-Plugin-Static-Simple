@@ -7,8 +7,9 @@ use File::stat;
 use File::Spec ();
 use IO::File ();
 use MIME::Types ();
+use MRO::Compat;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -49,7 +50,7 @@ sub prepare_action {
         $c->_locate_static_file( $path );
     }
     
-    return $c->NEXT::ACTUAL::prepare_action(@_);
+    return $c->next::method(@_);
 }
 
 sub dispatch {
@@ -64,7 +65,7 @@ sub dispatch {
         return $c->_serve_static;
     }
     else {
-        return $c->NEXT::ACTUAL::dispatch(@_);
+        return $c->next::method(@_);
     }
 }
 
@@ -76,13 +77,13 @@ sub finalize {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
     
-    return $c->NEXT::ACTUAL::finalize(@_);
+    return $c->next::method(@_);
 }
 
 sub setup {
     my $c = shift;
     
-    $c->NEXT::setup(@_);
+    $c->next::method(@_);
     
     if ( Catalyst->VERSION le '5.33' ) {
         require File::Slurp;

@@ -6,6 +6,7 @@ all_from 'lib/Catalyst/Plugin/Static/Simple.pm';
 requires 'Catalyst::Runtime' => '5.30';
 requires 'MIME::Types' => '1.15';
 requires 'Test::More';
+requires 'MRO::Compat';
 
 unless( can_use 'Catalyst' => '5.33' ) {
     requires 'File::Slurp';
