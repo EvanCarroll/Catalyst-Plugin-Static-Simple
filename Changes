@@ -1,7 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
 0.21    XXX
-        - Change from NEXT to MRO::Compat - RT#40628 (ilmari)
+        - Change from NEXT to MRO::Compat - RT#40628, RT#44553 (ilmari)
 
 0.20    2007-09-24 10:00:00
         - Fixed issue where the static dir regex did not add a trailing
