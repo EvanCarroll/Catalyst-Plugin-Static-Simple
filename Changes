@@ -1,6 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
 0.21    XXX
+		- Documentation improvements (jester)
         - Change from NEXT to MRO::Compat - RT#40628, RT#44553 (ilmari)
         - Bump prereq to MIME::Types to 1.25 to correctly send files
           commonly used to graft support for transparent PNGs into
