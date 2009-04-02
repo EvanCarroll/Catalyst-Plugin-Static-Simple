@@ -1,5 +1,7 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+        - Fix config key (mst)
+
 0.21    2009-03-29 20:31:49
 		- Documentation improvements (jester)
         - Change from NEXT to MRO::Compat - RT#40628, RT#44553 (ilmari)

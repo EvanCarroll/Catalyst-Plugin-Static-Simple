@@ -13,10 +13,12 @@ our $VERSION = '0.21';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
+my $CONFIG_KEY = "Plugin::Static::Simple";
+
 sub prepare_action {
     my $c = shift;
     my $path = $c->req->path;
-    my $config = $c->config->{static};
+    my $config = $c->config->{$CONFIG_KEY} ||= $c->config->{static};
     
     $path =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
@@ -59,7 +61,7 @@ sub dispatch {
     return if ( $c->res->status != 200 );
     
     if ( $c->_static_file ) {
-        if ( $c->config->{static}{no_logs} && $c->log->can('abort') ) {
+        if ( $c->config->{$CONFIG_KEY}{no_logs} && $c->log->can('abort') ) {
            $c->log->abort( 1 );
         }
         return $c->_serve_static;
@@ -73,7 +75,7 @@ sub finalize {
     my $c = shift;
     
     # display all log messages
-    if ( $c->config->{static}{debug} && scalar @{$c->_debug_msg} ) {
+    if ( $c->config->{$CONFIG_KEY}{debug} && scalar @{$c->_debug_msg} ) {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
     
@@ -89,7 +91,7 @@ sub setup {
         require File::Slurp;
     }
     
-    my $config = $c->config->{static} ||= {};
+    my $config = $c->config->{$CONFIG_KEY} ||= {};
     
     $config->{dirs} ||= [];
     $config->{include_path} ||= [ $c->config->{root} ];
@@ -117,7 +119,7 @@ sub _locate_static_file {
         File::Spec->no_upwards( File::Spec->splitdir( $path ) ) 
     );
     
-    my $config = $c->config->{static};
+    my $config = $c->config->{$CONFIG_KEY};
     my @ipaths = @{ $config->{include_path} };
     my $dpaths;
     my $count = 64; # maximum number of directories to search
@@ -205,7 +207,7 @@ sub _serve_static {
 sub serve_static_file {
     my ( $c, $full_path ) = @_;
 
-    my $config = $c->config->{static} ||= {};
+    my $config = $c->config->{$CONFIG_KEY} ||= {};
     
     if ( -e $full_path ) {
         $c->_debug_msg( "Serving static file: $full_path" )
@@ -226,7 +228,7 @@ sub serve_static_file {
 sub _ext_to_type {
     my ( $c, $full_path ) = @_;
     
-    my $config = $c->config->{static};
+    my $config = $c->config->{$CONFIG_KEY};
     
     if ( $full_path =~ /.*\.(\S{1,})$/xms ) {
         my $ext = $1;
@@ -324,8 +326,8 @@ Logging of static files is turned off by default.
 =head1 ADVANCED CONFIGURATION
 
 Configuration is completely optional and is specified within
-C<MyApp-E<gt>config-E<gt>{static}>.  If you use any of these options,
-this module will probably feel less "simple" to you!
+C<MyApp-E<gt>config-E<gt>{'Plugin::Static::Simple'}>.  If you use any of these
+options, this module will probably feel less "simple" to you!
 
 =head2 Enabling request logging
 
@@ -333,7 +335,7 @@ Since Catalyst 5.50, logging of static requests is turned off by
 default; static requests tend to clutter the log output and rarely
 reveal anything useful. However, if you want to enable logging of static
 requests, you can do so by setting
-C<MyApp-E<gt>config-E<gt>{static}-E<gt>{logging}> to 1.
+C<MyApp-E<gt>config-E<gt>{'Plugin::Static::Simple'}-E<gt>{logging}> to 1.
 
 =head2 Forcing directories into static mode
 
@@ -341,7 +343,7 @@ Define a list of top-level directories beneath your 'root' directory
 that should always be served in static mode.  Regular expressions may be
 specified using C<qr//>.
 
-    MyApp->config->{static}->{dirs} = [
+    MyApp->config->{'Plugin::Static::Simple'}->{dirs} = [
         'static',
         qr/^(images|css)/,
     ];
@@ -354,7 +356,7 @@ first file found. Note that your root directory is B<not> automatically
 added to the search path when you specify an C<include_path>. You should
 use C<MyApp-E<gt>config-E<gt>{root}> to add it.
 
-    MyApp->config->{static}->{include_path} = [
+    MyApp->config->{'Plugin::Static::Simple'}->{include_path} = [
         '/path/to/overlay',
         \&incpath_generator,
         MyApp->config->{root}
@@ -394,7 +396,7 @@ C<xhtml> will be ignored by Static::Simple in the interest of security.
 If you wish to define your own extensions to ignore, use the
 C<ignore_extensions> option:
 
-    MyApp->config->{static}->{ignore_extensions} 
+    MyApp->config->{'Plugin::Static::Simple'}->{ignore_extensions} 
         = [ qw/html asp php/ ];
     
 =head2 Ignoring entire directories
@@ -404,7 +406,7 @@ the C<ignore_dirs> option.  This option contains a list of relative
 directory paths to ignore.  If using C<include_path>, the path will be
 checked against every included path.
 
-    MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
+    MyApp->config->{'Plugin::Static::Simple'}->{ignore_dirs} = [ qw/tmpl css/ ];
     
 For example, if combined with the above C<include_path> setting, this
 C<ignore_dirs> value will ignore the following directories if they exist:
@@ -421,7 +423,7 @@ C<ignore_dirs> value will ignore the following directories if they exist:
 To override or add to the default MIME types set by the L<MIME::Types>
 module, you may enter your own extension to MIME type mapping.
 
-    MyApp->config->{static}->{mime_types} = {
+    MyApp->config->{'Plugin::Static::Simple'}->{mime_types} = {
         jpg => 'image/jpg',
         png => 'image/png',
     };
@@ -437,7 +439,7 @@ many compatibility issues with other plugins.
 Enable additional debugging information printed in the Catalyst log.  This
 is automatically enabled when running Catalyst in -Debug mode.
 
-    MyApp->config->{static}->{debug} = 1;
+    MyApp->config->{'Plugin::Static::Simple'}->{debug} = 1;
     
 =head1 USING WITH APACHE
 
