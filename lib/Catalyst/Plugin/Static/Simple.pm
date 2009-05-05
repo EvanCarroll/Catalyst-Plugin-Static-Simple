@@ -274,8 +274,9 @@ Catalyst::Plugin::Static::Simple - Make serving static pages painless.
 
 =head1 SYNOPSIS
 
-    use Catalyst;
-    MyApp->setup( qw/Static::Simple/ );
+    package MyApp;
+    use Catalyst qw/ Static::Simple /;
+    MyApp->setup;
     # that's it; static content is automatically served by Catalyst
     # from the application's root directory, though you can configure
     # things or bypass Catalyst entirely in a production environment
