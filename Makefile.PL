@@ -1,4 +1,4 @@
-use inc::Module::Install 0.65;
+use inc::Module::Install 0.87;
 
 name 'Catalyst-Plugin-Static-Simple';
 all_from 'lib/Catalyst/Plugin/Static/Simple.pm';
