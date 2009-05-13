@@ -300,6 +300,18 @@ through Catalyst.
 Note that actions mapped to paths using periods (.) will still operate
 properly.
 
+If the plugin can not find the file, the request is dispatched to your
+application instead. This means you are responsible for generating a 
+C<404> error if your applicaton can not process the request:
+
+   # handled by static::simple, not dispatched to your application
+   /images/exists.png
+   
+   # static::simple will not find the file and let your application
+   # handle the request. You are responsible for generating a file
+   # or returning a 404 error
+   /images/does_not_exist.png
+
 Though Static::Simple is designed to work out-of-the-box, you can tweak
 the operation by adding various configuration options. In a production
 environment, you will probably want to use your webserver to deliver
