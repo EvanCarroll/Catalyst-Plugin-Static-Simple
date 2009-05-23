@@ -1,4 +1,4 @@
-use inc::Module::Install 0.87;
+use inc::Module::Install;  # FIXME 0.87;
 
 name 'Catalyst-Plugin-Static-Simple';
 all_from 'lib/Catalyst/Plugin/Static/Simple.pm';
@@ -24,4 +24,6 @@ if( can_use 'Catalyst::Plugin::SubRequest' ) {
 }
 
 auto_install;
+resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Plugin-Static-Simple/trunk/';
+
 WriteAll;
