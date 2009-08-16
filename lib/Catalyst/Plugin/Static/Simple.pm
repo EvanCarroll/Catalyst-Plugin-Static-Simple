@@ -17,16 +17,16 @@ sub prepare_action {
     my $c = shift;
     my $path = $c->req->path;
     my $config = $c->config->{static};
-    
+
     $path =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
     # is the URI in a static-defined path?
     foreach my $dir ( @{ $config->{dirs} } ) {
         my $dir_re = quotemeta $dir;
-        
+
         # strip trailing slashes, they'll be added in our regex
         $dir_re =~ s{/$}{};
-        
+
         my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr{^${dir_re}/};
         if ($@) {
             $c->error( "Error compiling static dir regex '$dir': $@" );
@@ -43,21 +43,21 @@ sub prepare_action {
             }
         }
     }
-    
+
     # Does the path have an extension?
     if ( $path =~ /.*\.(\S{1,})$/xms ) {
         # and does it exist?
         $c->_locate_static_file( $path );
     }
-    
+
     return $c->next::method(@_);
 }
 
 sub dispatch {
     my $c = shift;
-    
+
     return if ( $c->res->status != 200 );
-    
+
     if ( $c->_static_file ) {
         if ( $c->config->{static}{no_logs} && $c->log->can('abort') ) {
            $c->log->abort( 1 );
@@ -71,26 +71,22 @@ sub dispatch {
 
 sub finalize {
     my $c = shift;
-    
+
     # display all log messages
     if ( $c->config->{static}{debug} && scalar @{$c->_debug_msg} ) {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
-    
+
     return $c->next::method(@_);
 }
 
 sub setup {
     my $c = shift;
-    
+
     $c->maybe::next::method(@_);
-    
-    if ( Catalyst->VERSION le '5.33' ) {
-        require File::Slurp;
-    }
-    
+
     my $config = $c->config->{static} ||= {};
-    
+
     $config->{dirs} ||= [];
     $config->{include_path} ||= [ $c->config->{root} ];
     $config->{mime_types} ||= {};
@@ -99,11 +95,11 @@ sub setup {
     $config->{debug} ||= $c->debug;
     $config->{no_logs} = 1 unless defined $config->{no_logs};
     $config->{no_logs} = 0 if $config->{logging};
-    
+
     # load up a MIME::Types object, only loading types with
     # at least 1 file extension
     $config->{mime_types_obj} = MIME::Types->new( only_complete => 1 );
-    
+
     # preload the type index hash so it's not built on the first request
     $config->{mime_types_obj}->create_type_index;
 }
@@ -112,20 +108,20 @@ sub setup {
 # Based on Template Toolkit INCLUDE_PATH code
 sub _locate_static_file {
     my ( $c, $path, $in_static_dir ) = @_;
-    
+
     $path = File::Spec->catdir(
-        File::Spec->no_upwards( File::Spec->splitdir( $path ) ) 
+        File::Spec->no_upwards( File::Spec->splitdir( $path ) )
     );
-    
+
     my $config = $c->config->{static};
     my @ipaths = @{ $config->{include_path} };
     my $dpaths;
     my $count = 64; # maximum number of directories to search
-    
+
     DIR_CHECK:
     while ( @ipaths && --$count) {
         my $dir = shift @ipaths || next DIR_CHECK;
-        
+
         if ( ref $dir eq 'CODE' ) {
             eval { $dpaths = &$dir( $c ) };
             if ($@) {
@@ -137,7 +133,7 @@ sub _locate_static_file {
         } else {
             $dir =~ s/(\/|\\)$//xms;
             if ( -d $dir && -f $dir . '/' . $path ) {
-                
+
                 # Don't ignore any files in static dirs defined with 'dirs'
                 unless ( $in_static_dir ) {
                     # do we need to ignore the file?
@@ -149,7 +145,7 @@ sub _locate_static_file {
                             next DIR_CHECK;
                         }
                     }
-                
+
                     # do we need to ignore based on extension?
                     for my $ignore_ext ( @{ $config->{ignore_extensions} } ) {
                         if ( $path =~ /.*\.${ignore_ext}$/ixms ) {
@@ -159,20 +155,20 @@ sub _locate_static_file {
                         }
                     }
                 }
-                
+
                 $c->_debug_msg( 'Serving ' . $dir . '/' . $path )
                     if $config->{debug};
                 return $c->_static_file( $dir . '/' . $path );
             }
         }
     }
-    
+
     return;
 }
 
 sub _serve_static {
     my $c = shift;
-           
+
     my $full_path = shift || $c->_static_file;
     my $type      = $c->_ext_to_type( $full_path );
     my $stat      = stat $full_path;
@@ -181,24 +177,16 @@ sub _serve_static {
     $c->res->headers->content_length( $stat->size );
     $c->res->headers->last_modified( $stat->mtime );
 
-    if ( Catalyst->VERSION le '5.33' ) {
-        # old File::Slurp method
-        my $content = File::Slurp::read_file( $full_path );
-        $c->res->body( $content );
+    my $fh = IO::File->new( $full_path, 'r' );
+    if ( defined $fh ) {
+        binmode $fh;
+        $c->res->body( $fh );
     }
     else {
-        # new method, pass an IO::File object to body
-        my $fh = IO::File->new( $full_path, 'r' );
-        if ( defined $fh ) {
-            binmode $fh;
-            $c->res->body( $fh );
-        }
-        else {
-            Catalyst::Exception->throw( 
-                message => "Unable to open $full_path for reading" );
-        }
+        Catalyst::Exception->throw(
+            message => "Unable to open $full_path for reading" );
     }
-    
+
     return 1;
 }
 
@@ -206,7 +194,7 @@ sub serve_static_file {
     my ( $c, $full_path ) = @_;
 
     my $config = $c->config->{static} ||= {};
-    
+
     if ( -e $full_path ) {
         $c->_debug_msg( "Serving static file: $full_path" )
             if $config->{debug};
@@ -225,12 +213,12 @@ sub serve_static_file {
 # looks up the correct MIME type for the current file extension
 sub _ext_to_type {
     my ( $c, $full_path ) = @_;
-    
+
     my $config = $c->config->{static};
-    
+
     if ( $full_path =~ /.*\.(\S{1,})$/xms ) {
         my $ext = $1;
-        my $type = $config->{mime_types}{$ext} 
+        my $type = $config->{mime_types}{$ext}
             || $config->{mime_types_obj}->mimeTypeOf( $ext );
         if ( $type ) {
             $c->_debug_msg( "as $type" ) if $config->{debug};
@@ -251,15 +239,15 @@ sub _ext_to_type {
 
 sub _debug_msg {
     my ( $c, $msg ) = @_;
-    
+
     if ( !defined $c->_static_debug_message ) {
         $c->_static_debug_message( [] );
     }
-    
+
     if ( $msg ) {
         push @{ $c->_static_debug_message }, $msg;
     }
-    
+
     return $c->_static_debug_message;
 }
 
@@ -299,7 +287,7 @@ Note that actions mapped to paths using periods (.) will still operate
 properly.
 
 If the plugin can not find the file, the request is dispatched to your
-application instead. This means you are responsible for generating a 
+application instead. This means you are responsible for generating a
 C<404> error if your applicaton can not process the request:
 
    # handled by static::simple, not dispatched to your application
@@ -372,14 +360,14 @@ use C<MyApp-E<gt>config-E<gt>{root}> to add it.
         \&incpath_generator,
         MyApp->config->{root}
     ];
-    
+
 With the above setting, a request for the file C</images/logo.jpg> will search
 for the following files, returning the first one found:
 
     /path/to/overlay/images/logo.jpg
     /dynamic/path/images/logo.jpg
     /your/app/home/root/images/logo.jpg
-    
+
 The include path can contain a subroutine reference to dynamically return a
 list of available directories.  This method will receive the C<$c> object as a
 parameter and should return a reference to a list of directories.  Errors can
@@ -397,7 +385,7 @@ For example:
             die "No customer dir defined.";
         }
     }
-    
+
 =head2 Ignoring certain types of files
 
 There are some file types you may not wish to serve as static files.
@@ -407,9 +395,9 @@ C<xhtml> will be ignored by Static::Simple in the interest of security.
 If you wish to define your own extensions to ignore, use the
 C<ignore_extensions> option:
 
-    MyApp->config->{static}->{ignore_extensions} 
+    MyApp->config->{static}->{ignore_extensions}
         = [ qw/html asp php/ ];
-    
+
 =head2 Ignoring entire directories
 
 To prevent an entire directory from being served statically, you can use
@@ -418,7 +406,7 @@ directory paths to ignore.  If using C<include_path>, the path will be
 checked against every included path.
 
     MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
-    
+
 For example, if combined with the above C<include_path> setting, this
 C<ignore_dirs> value will ignore the following directories if they exist:
 
@@ -427,7 +415,7 @@ C<ignore_dirs> value will ignore the following directories if they exist:
     /dynamic/path/tmpl
     /dynamic/path/css
     /your/app/home/root/tmpl
-    /your/app/home/root/css    
+    /your/app/home/root/css
 
 =head2 Custom MIME types
 
@@ -451,7 +439,7 @@ Enable additional debugging information printed in the Catalyst log.  This
 is automatically enabled when running Catalyst in -Debug mode.
 
     MyApp->config->{static}->{debug} = 1;
-    
+
 =head1 USING WITH APACHE
 
 While Static::Simple will work just fine serving files through Catalyst
@@ -490,7 +478,7 @@ files. The final configuration will look something like this:
     </Location>
 
 If you are running in a VirtualHost, you can just set the DocumentRoot
-location to the location of your root directory; see 
+location to the location of your root directory; see
 L<Catalyst::Engine::Apache2::MP20>.
 
 =head1 PUBLIC METHODS
@@ -512,7 +500,7 @@ you need to  autogenerate them if they don't exist, or they are stored in a mode
 
 Static::Simple extends the following steps in the Catalyst process.
 
-=head2 prepare_action 
+=head2 prepare_action
 
 C<prepare_action> is used to first check if the request path is a static
 file.  If so, we skip all other C<prepare_action> steps to improve
@@ -534,7 +522,7 @@ C<setup> initializes all default values.
 
 =head1 SEE ALSO
 
-L<Catalyst>, L<Catalyst::Plugin::Static>, 
+L<Catalyst>, L<Catalyst::Plugin::Static>,
 L<http://www.iana.org/assignments/media-types/>
 
 =head1 AUTHOR
@@ -548,6 +536,8 @@ Marcus Ramberg, <mramberg@cpan.org>
 Jesse Sheidlower, <jester@panix.com>
 
 Guillermo Roditi, <groditi@cpan.org>
+
+Florian Ragwitz <rafl@debian.org>
 
 =head1 THANKS
 
