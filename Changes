@@ -1,5 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.22    2009-08-21 18:14:59
         - Add tests for delivering empty files.
         - Fix those tests by depending on Catalyst-Runtime 5.80008.
         - Throw away compatibility code for older catalyst versions.
