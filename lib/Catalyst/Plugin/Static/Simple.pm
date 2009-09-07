@@ -179,6 +179,7 @@ sub _serve_static {
       $c->_debug_msg( " (not modified)" )
         if $config->{debug};
 
+      $c->res->headers->remove_content_headers;
       $c->res->status(304); # Not Modified
     } else {
       $c->res->headers->content_type( $type );
