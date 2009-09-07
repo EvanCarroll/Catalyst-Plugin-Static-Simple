@@ -169,24 +169,33 @@ sub _locate_static_file {
 sub _serve_static {
     my $c = shift;
 
+    my $config = $c->config->{static};
     my $full_path = shift || $c->_static_file;
     my $type      = $c->_ext_to_type( $full_path );
     my $stat      = stat $full_path;
+    my $ims       = $c->req->headers->if_modified_since;
 
-    $c->res->headers->content_type( $type );
-    $c->res->headers->content_length( $stat->size );
-    $c->res->headers->last_modified( $stat->mtime );
+    if (defined $ims && $stat->mtime <= $ims) {
+      $c->_debug_msg( " (not modified)" )
+        if $config->{debug};
 
-    my $fh = IO::File->new( $full_path, 'r' );
-    if ( defined $fh ) {
+      $c->res->status(304); # Not Modified
+    } else {
+      $c->res->headers->content_type( $type );
+      $c->res->headers->content_length( $stat->size );
+
+      my $fh = IO::File->new( $full_path, 'r' );
+      if ( defined $fh ) {
         binmode $fh;
         $c->res->body( $fh );
-    }
-    else {
+      }
+      else {
         Catalyst::Exception->throw(
-            message => "Unable to open $full_path for reading" );
+          message => "Unable to open $full_path for reading" );
+      }
     }
 
+    $c->res->headers->last_modified( $stat->mtime );
     return 1;
 }
 
