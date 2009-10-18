@@ -9,7 +9,7 @@ use IO::File ();
 use MIME::Types ();
 use MRO::Compat;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -552,6 +552,12 @@ For the include_path code from Template Toolkit:
     Andy Wardley
 
 =head1 COPYRIGHT
+
+Copyright (c) 2005 - 2009
+the Catalyst::Plugin::Static::Simple L</AUTHOR> and L</CONTRIBUTORS>
+as listed above.
+
+=head1 LICENSE
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl itself.

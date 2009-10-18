@@ -1,5 +1,8 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.24   2009-10-18 19:10:00 BST
+        - Fixup copyright information
+
 0.23   2009-10-06 17:40:39
         - Move actions out of TestApp into a Root controller as
           this is now deprecated.
