@@ -9,7 +9,7 @@ use IO::File ();
 use MIME::Types ();
 use MRO::Compat;
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
@@ -546,7 +546,11 @@ Jesse Sheidlower, <jester@panix.com>
 
 Guillermo Roditi, <groditi@cpan.org>
 
-Florian Ragwitz <rafl@debian.org>
+Florian Ragwitz, <rafl@debian.org>
+
+Tomas Doran, <bobtfish@bobtfish.net>
+
+Justin Wheeler (dnm)
 
 =head1 THANKS
 
