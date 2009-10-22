@@ -17,7 +17,7 @@ my $orig_sub = *Catalyst::Plugin::Static::Simple::prepare_action{CODE};
 *Catalyst::Plugin::Static::Simple::prepare_action = sub {
 	my ($c) = @_;
 
-	eval { my $var = 1 / 0 };
+	eval { die("FOO"); };
 
 	ok ($@, '$@ has a value.');
 	return $orig_sub->( $c );
