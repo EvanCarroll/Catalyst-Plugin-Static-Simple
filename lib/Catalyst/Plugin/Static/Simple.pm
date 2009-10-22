@@ -27,10 +27,19 @@ sub prepare_action {
         # strip trailing slashes, they'll be added in our regex
         $dir_re =~ s{/$}{};
 
-        my $re = ( $dir =~ m{^qr/}xms ) ? eval $dir : qr{^${dir_re}/};
-        if ($@) {
-            $c->error( "Error compiling static dir regex '$dir': $@" );
+        my $re;
+
+        if ( $dir =~ m{^qr/}xms ) {
+            $re = eval $dir;
+
+            if ($@) {
+                $c->error( "Error compiling static dir regex '$dir': $@" );
+            }
         }
+        else {
+            $re = qr{^${dir_re}/};
+        }
+
         if ( $path =~ $re ) {
             if ( $c->_locate_static_file( $path, 1 ) ) {
                 $c->_debug_msg( 'from static directory' )
