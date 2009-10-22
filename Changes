@@ -2,6 +2,7 @@ Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
 0.24   2009-10-18 19:10:00 BST
         - Fixup copyright information
+	- Fix bug where old unrelated $@ values would result in an error. (dnm)
 
 0.23   2009-10-06 17:40:39
         - Move actions out of TestApp into a Root controller as
