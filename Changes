@@ -1,5 +1,8 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+        - Require newer (>= 0.15) Catalyst::Plugin::SubRequest for subrequest
+          tests as old versions don't work with new Catalyst (>= 5.80014)
+
 0.25   2009-10-22 21:40:00 BST
         - Fix bug where old unrelated $@ values would result in an error.
 
