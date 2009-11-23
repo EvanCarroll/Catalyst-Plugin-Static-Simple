@@ -9,7 +9,7 @@ use IO::File ();
 use MIME::Types ();
 use MRO::Compat;
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 __PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
 
