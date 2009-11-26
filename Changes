@@ -1,5 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+        - Fix Pod to show less nasty method of assigning config by calling
+          the config method with parameters, rather than poking around inside
+          the hash.
+
 0.26   2009-11-23 23:04:53
         - Require newer (>= 0.15) Catalyst::Plugin::SubRequest for subrequest
           tests as old versions don't work with new Catalyst (>= 5.80014)

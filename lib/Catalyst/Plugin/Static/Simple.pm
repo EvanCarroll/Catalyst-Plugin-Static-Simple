@@ -351,10 +351,14 @@ Define a list of top-level directories beneath your 'root' directory
 that should always be served in static mode.  Regular expressions may be
 specified using C<qr//>.
 
-    MyApp->config->{static}->{dirs} = [
-        'static',
-        qr/^(images|css)/,
-    ];
+    MyApp->config(
+        static => {
+            dirs => [
+                'static',
+                qr/^(images|css)/,
+            ],
+        }
+    );
 
 =head2 Including additional directories
 
@@ -364,11 +368,15 @@ first file found. Note that your root directory is B<not> automatically
 added to the search path when you specify an C<include_path>. You should
 use C<MyApp-E<gt>config-E<gt>{root}> to add it.
 
-    MyApp->config->{static}->{include_path} = [
-        '/path/to/overlay',
-        \&incpath_generator,
-        MyApp->config->{root}
-    ];
+    MyApp->config(
+        static => {
+            include_path => [
+                '/path/to/overlay',
+                \&incpath_generator,
+                MyApp->config->{root},
+            ],
+        },
+    );
 
 With the above setting, a request for the file C</images/logo.jpg> will search
 for the following files, returning the first one found:
@@ -387,7 +395,7 @@ For example:
 
     sub incpath_generator {
         my $c = shift;
-        
+
         if ( $c->session->{customer_dir} ) {
             return [ $c->session->{customer_dir} ];
         } else {
@@ -404,8 +412,11 @@ C<xhtml> will be ignored by Static::Simple in the interest of security.
 If you wish to define your own extensions to ignore, use the
 C<ignore_extensions> option:
 
-    MyApp->config->{static}->{ignore_extensions}
-        = [ qw/html asp php/ ];
+    MyApp->config(
+        static => {
+            ignore_extensions => [ qw/html asp php/ ],
+        },
+    );
 
 =head2 Ignoring entire directories
 
@@ -414,7 +425,11 @@ the C<ignore_dirs> option.  This option contains a list of relative
 directory paths to ignore.  If using C<include_path>, the path will be
 checked against every included path.
 
-    MyApp->config->{static}->{ignore_dirs} = [ qw/tmpl css/ ];
+    MyApp->config(
+        static => {
+            ignore_dirs => [ qw/tmpl css/ ],
+        },
+    );
 
 For example, if combined with the above C<include_path> setting, this
 C<ignore_dirs> value will ignore the following directories if they exist:
@@ -431,10 +446,14 @@ C<ignore_dirs> value will ignore the following directories if they exist:
 To override or add to the default MIME types set by the L<MIME::Types>
 module, you may enter your own extension to MIME type mapping.
 
-    MyApp->config->{static}->{mime_types} = {
-        jpg => 'image/jpg',
-        png => 'image/png',
-    };
+    MyApp->config(
+        static => {
+            mime_types => {
+                jpg => 'image/jpg',
+                png => 'image/png',
+            },
+        },
+    );
 
 =head2 Compatibility with other plugins
 
@@ -447,7 +466,11 @@ many compatibility issues with other plugins.
 Enable additional debugging information printed in the Catalyst log.  This
 is automatically enabled when running Catalyst in -Debug mode.
 
-    MyApp->config->{static}->{debug} = 1;
+    MyApp->config(
+        static => {
+            debug => 1,
+        },
+    );
 
 =head1 USING WITH APACHE
 
