@@ -1,5 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.27   2010-01-03 14:49:00
         - Switch to being a Moose role, removing dependencies on
           Class::Data::Inheritable and Class::Accessor (Andrey Kostenko in
           RT#51089)

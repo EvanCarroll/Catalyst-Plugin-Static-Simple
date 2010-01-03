@@ -7,7 +7,7 @@ use IO::File ();
 use MIME::Types ();
 use namespace::autoclean;
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 has _static_file => ( is => 'rw' );
 has _static_debug_message => ( is => 'rw', isa => 'Str' );
