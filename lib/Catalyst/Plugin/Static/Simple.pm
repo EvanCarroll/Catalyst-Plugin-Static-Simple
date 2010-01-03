@@ -1,8 +1,6 @@
 package Catalyst::Plugin::Static::Simple;
 
-use strict;
-use warnings;
-use base qw/Class::Accessor::Fast Class::Data::Inheritable/;
+use Moose::Role;
 use File::stat;
 use File::Spec ();
 use IO::File ();
@@ -11,9 +9,10 @@ use MRO::Compat;
 
 our $VERSION = '0.26';
 
-__PACKAGE__->mk_accessors( qw/_static_file _static_debug_message/ );
+has _static_file => ( is => 'rw' );
+has _static_debug_message => ( is => 'rw', isa => 'Str' );
 
-sub prepare_action {
+before prepare_action => sub {
     my $c = shift;
     my $path = $c->req->path;
     my $config = $c->config->{static};
@@ -58,11 +57,9 @@ sub prepare_action {
         # and does it exist?
         $c->_locate_static_file( $path );
     }
+};
 
-    return $c->next::method(@_);
-}
-
-sub dispatch {
+override dispatch => sub {
     my $c = shift;
 
     return if ( $c->res->status != 200 );
@@ -74,20 +71,18 @@ sub dispatch {
         return $c->_serve_static;
     }
     else {
-        return $c->next::method(@_);
+        return super;
     }
-}
+};
 
-sub finalize {
+before finalize => sub {
     my $c = shift;
 
     # display all log messages
     if ( $c->config->{static}{debug} && scalar @{$c->_debug_msg} ) {
         $c->log->debug( 'Static::Simple: ' . join q{ }, @{$c->_debug_msg} );
     }
-
-    return $c->next::method(@_);
-}
+};
 
 sub setup {
     my $c = shift;
