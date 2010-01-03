@@ -5,7 +5,7 @@ use File::stat;
 use File::Spec ();
 use IO::File ();
 use MIME::Types ();
-use MRO::Compat;
+use namespace::autoclean;
 
 our $VERSION = '0.26';
 
@@ -84,10 +84,8 @@ before finalize => sub {
     }
 };
 
-sub setup {
+before setup_finalize => sub {
     my $c = shift;
-
-    $c->maybe::next::method(@_);
 
     my $config = $c->config->{static} ||= {};
 
@@ -106,7 +104,7 @@ sub setup {
 
     # preload the type index hash so it's not built on the first request
     $config->{mime_types_obj}->create_type_index;
-}
+};
 
 # Search through all included directories for the static file
 # Based on Template Toolkit INCLUDE_PATH code
@@ -296,7 +294,7 @@ C<404> error if your applicaton can not process the request:
 
    # handled by static::simple, not dispatched to your application
    /images/exists.png
-   
+
    # static::simple will not find the file and let your application
    # handle the request. You are responsible for generating a file
    # or returning a 404 error
