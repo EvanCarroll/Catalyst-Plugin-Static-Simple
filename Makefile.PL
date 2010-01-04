@@ -11,6 +11,7 @@ requires 'Catalyst::Runtime' => '5.80008';
 requires 'MIME::Types' => '1.25';
 requires 'Test::More';
 requires 'Moose';
+requires 'MooseX::Types';
 requires 'namespace::autoclean';
 
 test_requires 'Test::More';
