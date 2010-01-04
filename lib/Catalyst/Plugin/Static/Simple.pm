@@ -8,7 +8,7 @@ use MIME::Types ();
 use MooseX::Types::Moose qw/ArrayRef Str/;
 use namespace::autoclean;
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 has _static_file => ( is => 'rw' );
 has _static_debug_message => ( is => 'rw', isa => ArrayRef[Str] );

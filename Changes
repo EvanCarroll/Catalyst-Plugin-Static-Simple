@@ -1,5 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.28   2010-01-04 13:15:00
         - Fix issues in debug mode. (RT#53338)
 
 0.27   2010-01-03 14:49:00
