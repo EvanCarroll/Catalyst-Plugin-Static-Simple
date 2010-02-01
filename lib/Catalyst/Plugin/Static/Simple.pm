@@ -60,7 +60,8 @@ before prepare_action => sub {
     }
 };
 
-override dispatch => sub {
+around dispatch => sub {
+    my $orig = shift;
     my $c = shift;
 
     return if ( $c->res->status != 200 );
@@ -72,7 +73,7 @@ override dispatch => sub {
         return $c->_serve_static;
     }
     else {
-        return super;
+        return $c->$orig(@_);
     }
 };
 
@@ -568,6 +569,8 @@ Florian Ragwitz, <rafl@debian.org>
 Tomas Doran, <bobtfish@bobtfish.net>
 
 Justin Wheeler (dnm)
+
+Matt S Trout, <mst@shadowcat.co.uk>
 
 =head1 THANKS
 
