@@ -1,5 +1,6 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.29   2010-02-01 18:45:00
         - Switch from override to around, because really, wtf
 
 0.28   2010-01-04 13:15:00
