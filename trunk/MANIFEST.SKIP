@@ -1,0 +1,35 @@
+\bCatalyst-Plugin-Static-Simple-
+
+# Avoid version control files.
+\bRCS\b
+\bCVS\b
+,v$
+\B\.svn\b
+\B\.git\b
+\B\.gitignore\b
+
+# Avoid Makemaker generated and utility files.
+\bMakefile$
+\bblib
+\bMakeMaker-\d
+\bpm_to_blib$
+\bblibdirs$
+^MANIFEST\.SKIP$
+
+# Avoid Module::Build generated and utility files.
+\bBuild$
+\b_build
+
+# Avoid temp and backup files.
+~$
+\.tmp$
+\.old$
+\.bak$
+\#$
+\b\.#
+
+# Don't ship the test db
+^t/var
+
+# Module::Install can't handle files with spaces
+t/lib/TestApp/root/files/space file.txt
