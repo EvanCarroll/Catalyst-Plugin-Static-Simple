@@ -27,11 +27,22 @@ sub subtest2 : Local {
 }
 
 sub serve_static : Local {
-    my ( $self, $c ) = @_;
+    my ( $self, $c, $ct ) = @_;
     
     my $file = catfile( $FindBin::Bin, 'lib', 'TestApp.pm' );
+
+    my %args;
+    $args{content_type} = $ct if defined $ct;
     
-    $c->serve_static_file( $file );
+    $c->serve_static_file( $file, \%args );
+}
+
+sub serve_static_ext_jpg : Local {
+    my ( $self, $c, $ct ) = @_;
+    
+    my $file = catfile( $FindBin::Bin, 'lib', 'TestApp.pm' );
+
+    $c->serve_static_file( $file, {ext=>'jpg'} );
 }
 
 sub serve_static_404 : Local {

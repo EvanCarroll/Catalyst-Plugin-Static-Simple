@@ -1,5 +1,9 @@
 Revision history for Perl extension Catalyst::Plugin::Static::Simple
 
+0.30   2010-08-06
+        - Added ability to override file extention and content type
+          with tests and pod patches closes RT#60053 -- ECARROLL
+
 0.29   2010-02-01 18:45:00
         - Switch from override to around, because really, wtf
 

@@ -171,11 +171,24 @@ sub _locate_static_file {
 }
 
 sub _serve_static {
-    my $c = shift;
+    my ( $c, $file_info ) = @_;
 
-    my $full_path = shift || $c->_static_file;
-    my $type      = $c->_ext_to_type( $full_path );
-    my $stat      = stat $full_path;
+    my $full_path = defined $file_info->{full_path}
+      ? $file_info->{full_path}
+      : $c->_static_file
+    ;
+
+    my $type = $file_info->{content_type};
+    unless ( defined $type ) {
+      if ( defined $file_info->{ext} ) {
+        $type = $c->_ext_to_type({ ext => $file_info->{ext} })
+      }
+      else {
+			  $type = $c->_ext_to_type({ full_path => $full_path })
+      }
+    }
+
+    my $stat  = stat $full_path;
 
     $c->res->headers->content_type( $type );
     $c->res->headers->content_length( $stat->size );
@@ -195,7 +208,7 @@ sub _serve_static {
 }
 
 sub serve_static_file {
-    my ( $c, $full_path ) = @_;
+    my ( $c, $full_path, $args ) = @_;
 
     my $config = $c->config->{static} ||= {};
 
@@ -211,34 +224,44 @@ sub serve_static_file {
         return;
     }
 
-    $c->_serve_static( $full_path );
+    $args->{full_path} = $full_path unless defined $args->{full_path};
+
+    $c->_serve_static( $args );
 }
 
 # looks up the correct MIME type for the current file extension
 sub _ext_to_type {
-    my ( $c, $full_path ) = @_;
+    my ( $c, $args ) = @_;
 
     my $config = $c->config->{static};
 
-    if ( $full_path =~ /.*\.(\S{1,})$/xms ) {
-        my $ext = $1;
-        my $type = $config->{mime_types}{$ext}
-            || $config->{mime_types_obj}->mimeTypeOf( $ext );
-        if ( $type ) {
-            $c->_debug_msg( "as $type" ) if $config->{debug};
-            return ( ref $type ) ? $type->type : $type;
-        }
-        else {
-            $c->_debug_msg( "as text/plain (unknown extension $ext)" )
-                if $config->{debug};
-            return 'text/plain';
-        }
+    ## figure out extention
+    my $ext = $args->{ext};
+    unless ( defined $ext ) {
+      if ( $args->{full_path} =~ /.*\.(\S{1,})$/xms ) {
+        $ext = $1;
+      }
+      else { 
+        $c->_debug_msg( 'as text/plain (no extension)' )
+           if $config->{debug}
+        ;
+        return 'text/plain';
+      }
+    }
+
+    ## Get it from mime db
+    my $type = $config->{mime_types}{$ext}
+        || $config->{mime_types_obj}->mimeTypeOf( $ext );
+    if ( $type ) {
+        $c->_debug_msg( "as $type" ) if $config->{debug};
+        return ( ref $type ) ? $type->type : $type;
     }
     else {
-        $c->_debug_msg( 'as text/plain (no extension)' )
+        $c->_debug_msg( "as text/plain (unknown extension $ext)" )
             if $config->{debug};
         return 'text/plain';
     }
+
 }
 
 sub _debug_msg {
@@ -280,12 +303,13 @@ The Static::Simple plugin is designed to make serving static content in
 your application during development quick and easy, without requiring a
 single line of code from you.
 
-This plugin detects static files by looking at the file extension in the
+This plugin can detect static files by looking at the file extension in the
 URL (such as B<.css> or B<.png> or B<.js>). The plugin uses the
 lightweight L<MIME::Types> module to map file extensions to
 IANA-registered MIME types, and will serve your static files with the
 correct MIME type directly to the browser, without being processed
-through Catalyst.
+through Catalyst. Alternatively, this plugin can accept the content type
+in a seperate argument hash.
 
 Note that actions mapped to paths using periods (.) will still operate
 properly.
@@ -450,6 +474,9 @@ module, you may enter your own extension to MIME type mapping.
         },
     );
 
+There is also the ability to override extentions and content_types using the
+C<serve_static> method
+
 =head2 Compatibility with other plugins
 
 Since version 0.12, Static::Simple plays nice with other plugins.  It no
@@ -510,7 +537,7 @@ L<Catalyst::Engine::Apache2::MP20>.
 
 =head1 PUBLIC METHODS
 
-=head2 serve_static_file $file_path
+=head2 serve_static_file $file_path $arg_hash
 
 Will serve the file located in $file_path statically. This is useful when
 you need to  autogenerate them if they don't exist, or they are stored in a model.
@@ -520,8 +547,22 @@ you need to  autogenerate them if they don't exist, or they are stored in a mode
     sub curr_user_thumb : PathPart("my_thumbnail.png") {
         my ( $self, $c ) = @_;
         my $file_path = $c->user->picture_thumbnail_path;
-        $c->serve_static_file($file_path);
+        $c->serve_static_file( $file_path );
     }
+
+This method also takes an optional C<$arg_hash> which can be used to
+override the normal inference of content_type by extention:
+    
+    sub curr_user_thumb : PathPart("my_leads.adf") {
+        my ( $self, $c ) = @_;
+        my $file_path = $c->stash->{leads};
+        $c->serve_static_file( $file_path, { content_type => 'text/xml' } );
+    }
+
+Valid keys for the argument hash are C<content_type>, C<ext>, and,
+C<full_path>. The key C<ext> simply serves the file but infers the files
+extention on the basis of an extention it doesn't have. This might be useful if
+you're serving up files named by hashes.
 
 =head1 INTERNAL EXTENDED METHODS
 
@@ -571,6 +612,8 @@ Tomas Doran, <bobtfish@bobtfish.net>
 Justin Wheeler (dnm)
 
 Matt S Trout, <mst@shadowcat.co.uk>
+
+Evan Carroll, <me@evancarroll.com>
 
 =head1 THANKS
 
