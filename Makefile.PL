@@ -1,8 +1,6 @@
 use strict;
 use warnings;
 use inc::Module::Install 0.91;
-use Module::Install::AuthorRequires;
-use Module::Install::AuthorTests;
 
 name 'Catalyst-Plugin-Static-Simple';
 all_from 'lib/Catalyst/Plugin/Static/Simple.pm';
@@ -16,11 +14,8 @@ requires 'namespace::autoclean';
 
 test_requires 'Test::More';
 
-author_requires 'Test::NoTabs';
-author_requires 'Test::Pod' => '1.14';
-author_requires 'Test::Pod::Coverage' => '1.04';
-
-author_tests 't/author';
+test_requires 'Test::Pod' => '1.14';
+test_requires 'Test::Pod::Coverage' => '1.04';
 
 if( can_use 'Catalyst::Plugin::SubRequest' ) {
     unless( can_use 'Catalyst::Plugin::SubRequest' => '0.08' ) {
@@ -34,6 +29,6 @@ if( can_use 'Catalyst::Plugin::SubRequest' ) {
 }
 
 auto_install;
-resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Plugin-Static-Simple/trunk/';
+resources repository => 'git://github.com/EvanCarroll/Catalyst-Plugin-Static-Simple.git';
 
 WriteAll;
