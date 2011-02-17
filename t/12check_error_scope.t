@@ -10,8 +10,8 @@ use lib "$FindBin::Bin/lib";
 
 use Test::More tests => 3;
 BEGIN {
-    use Catalyst::Plugin::Static::Simple;
-    Catalyst::Plugin::Static::Simple->meta->add_before_method_modifier(
+    use Catalyst::Plugin::Static::Simple::ButMaintained;
+    Catalyst::Plugin::Static::Simple::ButMaintained->meta->add_before_method_modifier(
         'prepare_action',
         sub {
             my ($c) = @_;

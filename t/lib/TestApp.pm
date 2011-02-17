@@ -11,7 +11,7 @@ TestApp->config(
     debug => 1,
 );
 
-my @plugins = qw/Static::Simple/;
+my @plugins = qw/Static::Simple::ButMaintained/;
 
 # load the SubRequest plugin if available
 eval { 
