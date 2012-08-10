@@ -10,7 +10,7 @@ use Test::More tests => 13;
 use Catalyst::Test 'TestApp';
 
 # test defined static dirs
-TestApp->config->{static}->{dirs} = [
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{dirs} = [
     'always-static',
     qr/^images/,
     'qr/^css/',

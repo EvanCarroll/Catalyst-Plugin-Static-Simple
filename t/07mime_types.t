@@ -10,7 +10,7 @@ use Test::More tests => 4;
 use Catalyst::Test 'TestApp';
 
 # test custom MIME types
-TestApp->config->{static}->{mime_types} = {
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{mime_types} = {
     omg => 'holy/crap',
     gif => 'patents/are-evil',
 };

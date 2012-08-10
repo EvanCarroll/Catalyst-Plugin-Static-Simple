@@ -6,6 +6,7 @@ use File::Spec ();
 use IO::File ();
 use MIME::Types ();
 use MooseX::Types::Moose qw/ArrayRef Str/;
+use Catalyst::Utils;
 use namespace::autoclean;
 
 our $VERSION = '0.30';
@@ -16,7 +17,7 @@ has _static_debug_message => ( is => 'rw', isa => ArrayRef[Str] );
 before prepare_action => sub {
 	my $c = shift;
 	my $path = $c->req->path;
-	my $config = $c->config->{static};
+	my $config = $c->config->{'Plugin::Static::Simple::ButMaintained'};
 
 	$path =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
@@ -70,7 +71,7 @@ around dispatch => sub {
 	return if ( $c->res->status != 200 );
 
 	if ( $c->_static_file ) {
-		if ( $c->config->{static}{no_logs} && $c->log->can('abort') ) {
+		if ( $c->config->{'Plugin::Static::Simple::ButMaintained'}{no_logs} && $c->log->can('abort') ) {
 			$c->log->abort( 1 );
 		}
 		return $c->_serve_static;
@@ -84,7 +85,7 @@ before finalize => sub {
 	my $c = shift;
 
 	# display all log messages
-	if ( $c->config->{static}{debug} && scalar @{$c->_debug_msg} ) {
+	if ( $c->config->{'Plugin::Static::Simple::ButMaintained'}{debug} && scalar @{$c->_debug_msg} ) {
 		$c->log->debug( 'Static::Simple::ButMaintained: ' . join q{ }, @{$c->_debug_msg} );
 	}
 };
@@ -92,7 +93,20 @@ before finalize => sub {
 before setup_finalize => sub {
 	my $c = shift;
 
-	my $config = $c->config->{static} ||= {};
+	$c->log->warn("Deprecated 'static' config key used, please use the key 'Plugin::Static::Simple::ButMaintained' instead")
+		if exists $c->config->{static}
+	;
+	$c->log->warn("Deprecated 'static' config key used, please use the key 'Plugin::Static::Simple::ButMaintained' instead")
+		if exists $c->config->{'Plugin::Static::Simple'}
+	;
+	
+	my $config = $c->config->{'Plugin::Static::Simple::ButMaintained'} = Catalyst::Utils::merge_hashes(
+		$c->config->{static} || {}
+		, Catalyst::Utils::merge_hashes(
+			$c->config->{'Plugin::Static::Simple'} || {}
+			, $c->config->{'Plugin::Static::Simple::ButMaintained'} || {}
+		)
+	);
 
 	$config->{dirs} ||= [];
 	$config->{include_path} ||= [ $c->config->{root} ];
@@ -120,7 +134,7 @@ sub _locate_static_file {
 		File::Spec->no_upwards( File::Spec->splitdir( $path ) )
 	);
 
-	my $config = $c->config->{static};
+	my $config = $c->config->{'Plugin::Static::Simple::ButMaintained'};
 	my @ipaths = @{ $config->{include_path} };
 	my $dpaths;
 	my $count = 64; # maximum number of directories to search
@@ -180,6 +194,9 @@ sub _locate_static_file {
 sub _serve_static {
 	my ( $c, $file_info ) = @_;
 
+	my $config  = $c->config->{'Plugin::Static::Simple::ButMaintained'};
+	my $headers = $c->res->headers;
+
 	my $full_path = defined $file_info->{full_path}
 		? $file_info->{full_path}
 		: $c->_static_file
@@ -197,9 +214,15 @@ sub _serve_static {
 
 	my $stat  = stat $full_path;
 
-	$c->res->headers->content_type( $type );
-	$c->res->headers->content_length( $stat->size );
-	$c->res->headers->last_modified( $stat->mtime );
+	$headers->content_type( $type );
+	$headers->content_length( $stat->size );
+	$headers->last_modified( $stat->mtime );
+	# Tell Firefox & friends its OK to cache, even over SSL:
+	$headers->header('Cache-control' => 'public');
+	# Optionally, set a fixed expiry time:
+	if ($config->{expires}) {
+		$headers->expires(time() + $config->{expires});
+	}
 
 	my $fh = IO::File->new( $full_path, 'r' );
 	if ( defined $fh ) {
@@ -218,7 +241,8 @@ sub _serve_static {
 sub serve_static_file {
 	my ( $c, $full_path, $args ) = @_;
 
-	my $config = $c->config->{static} ||= {};
+	my $config = $c->config->{'Plugin::Static::Simple::ButMaintained'};
+	my $res    = $c->res;
 
 	if ( -e $full_path ) {
 		$c->_debug_msg( "Serving static file: $full_path" )
@@ -229,8 +253,8 @@ sub serve_static_file {
 		$c->_debug_msg( "404: file not found: $full_path" )
 			if $config->{debug}
 		;
-		$c->res->status( 404 );
-		$c->res->content_type( 'text/html' );
+		$res->status( 404 );
+		$res->content_type( 'text/html' );
 		return;
 	}
 
@@ -243,7 +267,7 @@ sub serve_static_file {
 sub _ext_to_type {
 	my ( $c, $args ) = @_;
 
-	my $config = $c->config->{static};
+	my $config = $c->config->{'Plugin::Static::Simple::ButMaintained'};
 
 	## figure out extention
 	my $ext = $args->{ext};
@@ -363,10 +387,29 @@ extension for template files, you should also change the configuration.
 
 Logging of static files is turned off by default.
 
+=head1 DEFAULT BEHAVIOUR
+ 
+By default, Static::Simple will deliver all files having extensions
+(that is, bits of text following a period (C<.>)), I<except> files
+having the extensions C<tmpl>, C<tt>, C<tt2>, C<html>, and
+C<xhtml>. These files, and all files without extensions, will be
+processed through Catalyst. If L<MIME::Types> doesn't recognize an
+extension, it will be served as C<text/plain>.
+ 
+To restate: files having the extensions C<tmpl>, C<tt>, C<tt2>, C<html>,
+and C<xhtml> I<will not> be served statically by default, they will be
+processed by Catalyst. Thus if you want to use C<.html> files from
+within a Catalyst app as static files, you need to change the
+configuration of Static::Simple. Note also that files having any other
+extension I<will> be served statically, so if you're using any other
+extension for template files, you should also change the configuration.
+ 
+Logging of static files is turned off by default.
+
 =head1 ADVANCED CONFIGURATION
 
 Configuration is completely optional and is specified within
-C<MyApp-E<gt>config-E<gt>{static}>.  If you use any of these options,
+C<MyApp-E<gt>config-E<gt>{'Plugin::Static::Simple::ButMaintained'}>.  If you use any of these options,
 this module will probably feel less "simple" to you!
 
 =head2 Enabling request logging
@@ -375,7 +418,7 @@ Since Catalyst 5.50, logging of static requests is turned off by
 default; static requests tend to clutter the log output and rarely
 reveal anything useful. However, if you want to enable logging of static
 requests, you can do so by setting
-C<MyApp-E<gt>config-E<gt>{static}-E<gt>{logging}> to 1.
+C<MyApp-E<gt>config-E<gt>{'Plugin::Static::Simple::ButMaintained'}-E<gt>{logging}> to 1.
 
 =head2 Forcing directories into static mode
 
@@ -627,6 +670,8 @@ Justin Wheeler (dnm)
 
 Matt S Trout, <mst@shadowcat.co.uk>
 
+Toby Corkindale, <tjc@wintrmute.net>
+
 Evan Carroll, <me@evancarroll.com>
 
 =head1 THANKS
@@ -643,8 +688,8 @@ For the include_path code from Template Toolkit:
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005 - 2011
-the Catalyst::Plugin::Static::Simple::ButMaintained L</AUTHOR> and L</CONTRIBUTORS>
+Copyright (c) 2005 - 2012
+The Catalyst::Plugin::Static::Simple::ButMaintained L</AUTHOR> and L</CONTRIBUTORS>
 as listed above.
 
 =head1 LICENSE

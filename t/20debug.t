@@ -10,11 +10,11 @@ use Test::More tests => 5;
 use Catalyst::Test 'TestApp';
 
 # test defined static dirs
-TestApp->config->{static}->{dirs} = [
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{dirs} = [
     'always-static',
 ];
 
-TestApp->config->{static}->{debug} = 1;
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{debug} = 1;
 
 use Catalyst::Log;
 

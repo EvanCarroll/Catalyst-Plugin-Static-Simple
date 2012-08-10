@@ -4,8 +4,8 @@ use inc::Module::Install 0.91;
 
 resources repository => 'git://github.com/EvanCarroll/Catalyst-Plugin-Static-Simple.git';
 
-name 'Catalyst-Plugin-Static-Simple';
-all_from 'lib/Catalyst/Plugin/Static/Simple.pm';
+name 'Catalyst-Plugin-Static-Simple-ButMaintained';
+all_from 'lib/Catalyst/Plugin/Static/Simple/ButMaintained.pm';
 
 requires 'Catalyst::Runtime' => '5.80008';
 requires 'MIME::Types' => '1.25';

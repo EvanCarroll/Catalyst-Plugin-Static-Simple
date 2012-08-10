@@ -1,3 +1,8 @@
+0.31   2012-08-10
+        - Merged in changes from C:P:S:S (which added some nice expires code)
+        - Published code on CPAN, two years for RT#60053 and no feedback.
+          fuck mst.
+
 0.30   2010-08-06
         - Added ability to override file extention and content type
           with tests and pod patches closes RT#60053

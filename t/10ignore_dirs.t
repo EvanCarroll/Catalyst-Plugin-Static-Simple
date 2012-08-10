@@ -10,10 +10,10 @@ use Test::More tests => 6;
 use Catalyst::Test 'TestApp';
 
 # test ignoring directories
-TestApp->config->{static}->{ignore_dirs} = [ qw/ignored o-ignored files/ ];
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{ignore_dirs} = [ qw/ignored o-ignored files/ ];
 
 # test altenate root dirs
-TestApp->config->{static}->{include_path} = [
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{include_path} = [
     TestApp->config->{root} . '/overlay',
     TestApp->config->{root},
 ];

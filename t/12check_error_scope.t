@@ -23,7 +23,7 @@ BEGIN {
 }
 use Catalyst::Test 'TestApp';
 
-TestApp->config->{static}->{dirs} = [qr{stuff/}];
+TestApp->config->{'Plugin::Static::Simple::ButMaintained'}->{dirs} = [qr{stuff/}];
 
 ok( my $res = request("http://localhost/"), 'request ok' );
 ok( $res->code == 200, q{Previous error doesn't crash static::simple} );
