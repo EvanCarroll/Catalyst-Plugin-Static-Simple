@@ -346,7 +346,7 @@ lightweight L<MIME::Types> module to map file extensions to
 IANA-registered MIME types, and will serve your static files with the
 correct MIME type directly to the browser, without being processed
 through Catalyst. Alternatively, this plugin can accept the content type
-in a seperate argument hash.
+in a separate argument hash.
 
 Note that actions mapped to paths using periods (.) will still operate
 properly.
@@ -385,25 +385,6 @@ configuration of Static::Simple::ButMaintained. Note also that files having any 
 extension I<will> be served statically, so if you're using any other
 extension for template files, you should also change the configuration.
 
-Logging of static files is turned off by default.
-
-=head1 DEFAULT BEHAVIOUR
- 
-By default, Static::Simple will deliver all files having extensions
-(that is, bits of text following a period (C<.>)), I<except> files
-having the extensions C<tmpl>, C<tt>, C<tt2>, C<html>, and
-C<xhtml>. These files, and all files without extensions, will be
-processed through Catalyst. If L<MIME::Types> doesn't recognize an
-extension, it will be served as C<text/plain>.
- 
-To restate: files having the extensions C<tmpl>, C<tt>, C<tt2>, C<html>,
-and C<xhtml> I<will not> be served statically by default, they will be
-processed by Catalyst. Thus if you want to use C<.html> files from
-within a Catalyst app as static files, you need to change the
-configuration of Static::Simple. Note also that files having any other
-extension I<will> be served statically, so if you're using any other
-extension for template files, you should also change the configuration.
- 
 Logging of static files is turned off by default.
 
 =head1 ADVANCED CONFIGURATION
